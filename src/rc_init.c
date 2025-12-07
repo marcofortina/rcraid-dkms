@@ -1438,7 +1438,11 @@ int rc_queue_cmd_lck (struct scsi_cmnd * scp)
 
 #ifdef FAIL_ALL_IO
 	scp->result = DID_NO_CONNECT << 16;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,16,0)
 	scp->scsi_done(scp);
+#else
+    scsi_done(scp);
+#endif
 	return 0;
 #endif
 
@@ -1469,13 +1473,21 @@ rc_eh_abort_cmd (struct scsi_cmnd * scp)
 		  scp, scp->device->channel, scp->device->id);
 	// rc_config_debug = 1;
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,17,0)
 	srb = (rc_srb_t *)scp->SCp.ptr;
+#else
+	srb = *((rc_srb_t **) scsi_cmd_priv(scp));
+#endif
 	if (srb != NULL) {
 		rc_printk(RC_DEBUG, "\tsrb: 0x%p seq_num %d function %x status %x "
 			  "flags %x b/t/l %d/%d/%d\n", srb, srb->seq_num, srb->function,
 			  srb->status, srb->flags, srb->bus, srb->target, srb->lun);
 		srb->scsi_context = NULL;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,17,0)
 		scp->SCp.ptr = NULL;
+#else
+		*((rc_srb_t **) scsi_cmd_priv(scp)) = NULL;
+#endif
 	} else {
 		rc_printk(RC_WARN, "rc_eh_abort_cmd: srb already completed\n");
 		// most likely here because we already processed srb

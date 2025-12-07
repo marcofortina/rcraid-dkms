@@ -1443,7 +1443,11 @@ rc_msg_send_srb(struct scsi_cmnd * scp)
 		rc_printk(RC_ERROR, "rc_msg_send_srb:  scatter-gather list too large "
 			  "(%d)\n", scsi_sg_count(scp));
  		scp->result = DID_NO_CONNECT << 16;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,16,0)
  		scp->scsi_done(scp);
+#else
+		scsi_done(scp);
+#endif
 		return 0;
 	}
 
@@ -1497,7 +1501,11 @@ rc_msg_send_srb(struct scsi_cmnd * scp)
 	/* the scsi_cmnd pointer points at our srb, at least until the command is
 	 * aborted
 	 */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,17,0)
 	scp->SCp.ptr = (void *)srb;
+#else
+	*((rc_srb_t **)scsi_cmd_priv(scp)) = srb;
+#endif
 
 	rc_msg_build_sg(srb);
 
@@ -1887,7 +1895,11 @@ rc_msg_srb_complete(struct rc_srb_s *srb)
 		return;
 	}
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,17,0)
 	scp->SCp.ptr = NULL;
+#else
+	*((rc_srb_t **)scsi_cmd_priv(scp)) = NULL;
+#endif
 
 	if (srb->status == RC_SRB_STATUS_SUCCESS) {
 		 //rc_printk(RC_DEBUG2, "%s: seq_num %d SUCCESS\n", __FUNCTION__,
@@ -1895,7 +1907,11 @@ rc_msg_srb_complete(struct rc_srb_s *srb)
 		scp->result = DID_OK << 16 | COMMAND_COMPLETE << 8 | SAM_STAT_GOOD;
 
 		GET_IO_REQUEST_LOCK_IRQSAVE(irql);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,16,0)
 		scp->scsi_done(scp);
+#else
+		scsi_done(scp);
+#endif
 		PUT_IO_REQUEST_LOCK_IRQRESTORE(irql);
 		srb->seq_num = -1;
 		kfree(srb);
@@ -1914,7 +1930,11 @@ rc_msg_srb_complete(struct rc_srb_s *srb)
 			  srb->seq_num);
 		scp->result = DID_BAD_TARGET << 16;
 		GET_IO_REQUEST_LOCK_IRQSAVE(irql);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,16,0)
 		scp->scsi_done(scp);
+#else
+		scsi_done(scp);
+#endif
 		PUT_IO_REQUEST_LOCK_IRQRESTORE(irql);
 		srb->seq_num = -1;
 		kfree(srb);
@@ -1951,7 +1971,11 @@ rc_msg_srb_complete(struct rc_srb_s *srb)
 	}
 
 	GET_IO_REQUEST_LOCK_IRQSAVE(irql);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,16,0)
 	scp->scsi_done (scp);
+#else
+	scsi_done(scp);
+#endif
 	PUT_IO_REQUEST_LOCK_IRQRESTORE(irql);
 	srb->seq_num = -1;
 	kfree(srb);

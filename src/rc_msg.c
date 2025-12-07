@@ -2464,9 +2464,13 @@ rc_msg_access_ok(rc_access_ok_t accessOk)
 {
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)
-    accessOk.returnStatus = access_ok( accessOk.access_location, accessOk.access_size);
+    accessOk.returnStatus = access_ok( (void __user *)accessOk.access_location, accessOk.access_size);
 #else
+#ifdef VERIFY_WRITE
     accessOk.returnStatus = access_ok( VERIFY_WRITE , accessOk.access_location, accessOk.access_size);
+#else
+    accessOk.returnStatus = access_ok( accessOk.access_location, accessOk.access_size);
+#endif
 #endif /* LINUX_VERSION_CODE */
 
 }

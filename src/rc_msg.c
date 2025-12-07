@@ -25,6 +25,9 @@
 #include "asm/msr.h"
 #include <linux/page-flags.h>
 #include <linux/vmalloc.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,0,0)
+#include <linux/timekeeping.h>
+#endif
 #include <scsi/sg.h>
 #include "rc_ahci.h"
 
@@ -231,7 +234,7 @@ rc_vprintf(uint32_t severity, const char *format, va_list ar)
 	if (severity > rc_msg_level)
 		return 0;
 
-        if (severity && rc_saw_newline) {
+	if (severity && rc_saw_newline) {
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0))
 		ktime_get_real_ts64(&ts);
 		tv.tv_sec = ts.tv_sec;

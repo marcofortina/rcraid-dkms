@@ -187,9 +187,7 @@ static int  rc_slave_cfg(struct scsi_device *sdev, struct queue_limits *qlimits)
 int         rc_bios_params(struct scsi_device *sdev, struct block_device *bdev,
 			   sector_t capacity, int geom[]);
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,36)
-int         rc_queue_cmd(struct scsi_cmnd * scp, void (*CompletionRoutine) (struct scsi_cmnd *));
-#elif LINUX_VERSION_CODE < KERNEL_VERSION(5,15,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,15,0)
 int         rc_queue_cmd_lck(struct scsi_cmnd * scp, void (*CompletionRoutine) (struct scsi_cmnd *));
 #else
 int         rc_queue_cmd_lck(struct scsi_cmnd * scp);
@@ -333,9 +331,7 @@ static rc_proc_entry_t rc_proc_dir_entries[] = {
 
 #endif  /* LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0) */
 
-#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,35)
 static DEF_SCSI_QCMD(rc_queue_cmd)
-#endif
 
 static Scsi_Host_Template driver_template = {
 	.module =                  THIS_MODULE,
@@ -356,9 +352,6 @@ static Scsi_Host_Template driver_template = {
 	.eh_device_reset_handler = rc_eh_dev_reset,
 	.eh_bus_reset_handler =    rc_eh_bus_reset,
 	.eh_host_reset_handler =   rc_eh_hba_reset,
-#if LINUX_VERSION_CODE == KERNEL_VERSION(2,6,24)
-	.use_sg_chaining =         ENABLE_SG_CHAINING,
-#endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 0, 0)
 	.use_clustering =          ENABLE_CLUSTERING,
 #endif
@@ -1203,19 +1196,9 @@ static int rcraid_resume_one(struct pci_dev *pdev)
  *     once for each adapter card.
  */
 void
-rcraid_shutdown_one(
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,13)
-	struct pci_dev *pdev
-#else
-	struct device *dev
-#endif
-	)
+rcraid_shutdown_one(struct pci_dev *pdev)
 {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,13)
 	rc_adapter_t  *adapter = pci_get_drvdata(pdev);
-#else
-	rc_adapter_t  *adapter = pci_get_drvdata(to_pci_dev(dev));
-#endif
 	if (rc_state.state & USE_OSIC) {
 		rc_remove_proc();
 		rc_shutdown_host(rc_state.host_ptr);
@@ -1428,9 +1411,7 @@ int rc_mpt2_shutdown(rc_adapter_t *adapter)
  */
 
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,36)
-int rc_queue_cmd (struct scsi_cmnd * scp, void (*CompletionRoutine) (struct scsi_cmnd *))
-#elif LINUX_VERSION_CODE < KERNEL_VERSION(5,15,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,15,0)
 int rc_queue_cmd_lck (struct scsi_cmnd * scp, void (*CompletionRoutine) (struct scsi_cmnd *))
 #else
 int rc_queue_cmd_lck (struct scsi_cmnd * scp)
@@ -2680,13 +2661,7 @@ static struct pci_driver rcraid_pci_driver = {
 	.name       = RC_DRIVER_NAME,
 	.id_table   = rcraid_id_tbl,
 	.probe      = rcraid_probe_one,
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,13)
 	.shutdown   = rcraid_shutdown_one,
-#else
-	.driver     = {
-		.shutdown = rcraid_shutdown_one,
-	},
-#endif
 
 #ifdef  CONFIG_PM
 	.suspend		= rcraid_suspend_one,
@@ -2746,12 +2721,6 @@ rc_ahci_regwrite(void *context, u32 offset, u32 value)
         writel(value, mmio + offset);
 }
 #endif  /* LINUX_VERSION_CODE < KERNEL_VERSION(3, 17, 0) */
-
-#if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,18)
-/* RHEL5 kernels */
-#define this_device class
-#define pci_register_driver(x) pci_module_init(x)
-#endif
 
 static struct ctl_table rcraid_table[] = {
 	{
@@ -2846,13 +2815,8 @@ static int __init rcraid_init(void)
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6,4,0)
     rcraid_sysctl_hdr = register_sysctl("dev/scsi/rcraid", rcraid_table);
-#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,21)
-	rcraid_sysctl_hdr = register_sysctl_table(rcraid_root_table);
 #else
-	/*
-	 * "Insert at head" doesn't matter - set second parameter to 0
-	 */
-	rcraid_sysctl_hdr = register_sysctl_table(rcraid_root_table, 0);
+	rcraid_sysctl_hdr = register_sysctl_table(rcraid_root_table);
 #endif
 	if (rcraid_sysctl_hdr == NULL)
 		return -ENOMEM;

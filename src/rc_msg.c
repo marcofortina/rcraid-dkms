@@ -90,12 +90,6 @@ static void rc_sysrq_intr (
 #else
 			   int key
 #endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
-			   ,struct pt_regs *pt_regs
-#endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,36)
-			   ,struct tty_struct * tty
-#endif
 			   );
 
 static void rc_sysrq_state (
@@ -103,12 +97,6 @@ static void rc_sysrq_state (
 			   unsigned char key
 #else
 			   int key
-#endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
-			    ,struct pt_regs *pt_regs
-#endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,36)
-			   ,struct tty_struct * tty
 #endif
 			   );
 
@@ -1108,11 +1096,7 @@ rc_msg_init(rc_softstate_t *state)
 		rc_printk(RC_INFO, "rcraid: set parameter SmartPollInterval = %d "
 			  "seconds\n", SmartPollInterval);
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,31)
-    args.u.get_info.support4kNativeDisks = 0;
-#else
     args.u.get_info.support4kNativeDisks = 1;
-#endif
 
 	rc_send_msg(&args);
 
@@ -1502,8 +1486,6 @@ rc_msg_send_srb(struct scsi_cmnd * scp)
 	srb->dev_private  = (char *)srb->sg_list + sg_list_size;
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0))
 	srb->timeout      = scsi_cmd_to_rq(scp)->timeout/HZ;
-#elif (LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,26))
-	srb->timeout      = scp->timeout_per_command/HZ;
 #elif LINUX_VERSION_CODE < KERNEL_VERSION(5,14,0)
 	srb->timeout      = scp->request->timeout/HZ;
 #else
@@ -2153,22 +2135,6 @@ rc_msg_build_sg( rc_srb_t *srb)
 
 	rc_sg = srb->sg_list;
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,24)
-	if (scp->use_sg == 0) {       /* has to be a virtual address */
-		rc_sg->sg_num_elem = 1;
-		rc_sg->sg_elem[0].size   = scp->request_bufflen;
-		rc_sg->sg_elem[0].v_addr = scp->request_buffer;
-		rc_sg->sg_mem_type = RC_MEM_VADDR;
-
-		// RC_PRINTK(RC_DEBUG2, "rc_msg_build_sg: scp: 0x%p use_sg 0, buf "
-		//           "0x%8x:%8x, len %d\n", scp,
-		//           (rc_uint32_t)(rc_sg->sg_elem[0].dma_paddr >> 32),
-		//           (rc_uint32_t)(rc_sg->sg_elem[0].dma_paddr & 0xffffffff),
-		//           rc_sg->sg_elem[0].size);
-		return;
-	}
-#endif
-
 	has_highmem = 0;
 
 	if (ForcePhysAddr && scp->device->id != 16) {
@@ -2643,12 +2609,6 @@ static void rc_sysrq_intr (
 #else
 			   int key
 #endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
-			   ,struct pt_regs *pt_regs
-#endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,36)
-			   ,struct tty_struct * tty
-#endif
                            )
 {
 	rc_softstate_t *state;
@@ -2671,12 +2631,6 @@ static void rc_sysrq_state (
 			   unsigned char key
 #else
 			   int key
-#endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
-			    ,struct pt_regs *pt_regs
-#endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,36)
-			   ,struct tty_struct * tty
 #endif
 			   )
 {

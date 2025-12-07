@@ -25,9 +25,6 @@
 #include <linux/version.h>
 
 #include <linux/module.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,15)
-#include <linux/config.h>
-#endif
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/types.h>
@@ -65,31 +62,6 @@ typedef struct scsi_host_template Scsi_Host_Template;
 #define PUT_IO_REQUEST_LOCK
 #define GET_IO_REQUEST_LOCK_IRQSAVE(i)
 #define PUT_IO_REQUEST_LOCK_IRQRESTORE(i)
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,24)
-#define sg_next(__sg)        ((__sg)+1) // pointer arithmetic
-#define sg_phys(__sg)        (page_to_phys(sg_page((__sg))) + (__sg)->offset)
-#endif
-
-// some distro's backported these defines to previous kernel versions so
-// checking for defined as well helps avoid compiler warnings
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,23)
-#ifndef scsi_sg_count
-#define scsi_sg_count(__scp) ((__scp)->use_sg)
-#endif
-#ifndef scsi_bufflen
-#define scsi_bufflen(__scp)  ((__scp)->request_bufflen)
-#endif
-#ifndef scsi_sglist
-#define scsi_sglist(__scp)   ((struct scatterlist *)(__scp)->request_buffer)
-#endif
-#ifndef scsi_for_each_sg
-#define scsi_for_each_sg(__s, __g, __n, __i)		\
-	for ((__i) = 0, (__g) = (scsi_sglist(__s));	\
-	     (__i) < (__n);				\
-	     (__i)++, (__g) = sg_next((__g)))
-#endif
-#endif
 
 
 #include "rc_types_platform.h"
@@ -138,10 +110,6 @@ void rc_event_shutdown(void);
 extern rc_softstate_t       rc_state;
 extern rc_adapter_t       *rc_dev[];
 extern int            rc_msg_level;
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,24)
-#define sg_page(x) (x)->page
-#endif
 
 typedef struct _rc_work {
     struct _rc_work         *next;

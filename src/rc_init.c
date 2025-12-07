@@ -1138,7 +1138,10 @@ static int rcraid_resume_one(struct pci_dev *pdev)
 
         pci_restore_state(adapter->pdev);
 
-        pci_enable_device(adapter->pdev);
+        if (pci_enable_device(adapter->pdev))
+        {
+            // IGNORE RESULT
+        }
 
         if (adapter->version->start_func)
         {
@@ -1163,7 +1166,10 @@ static int rcraid_resume_one(struct pci_dev *pdev)
 
 	pci_restore_state(pdev);
 
-    pcim_enable_device(pdev);
+    if (pcim_enable_device(pdev))
+	{
+		// IGNORE RESULT
+	}
 
     //
     // and restart the core...

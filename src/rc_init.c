@@ -530,6 +530,16 @@ rc_init_adapter(struct pci_dev *dev, const struct pci_device_id *id)
 	/*
 	 * set dma_mask to 64 bit capabilities but if that fails, try 32 bit
 	 */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,4,0)
+	 if (!dma_set_mask(&dev->dev, DMA_BIT_MASK(64)) &&
+	    !dma_set_coherent_mask(&dev->dev, DMA_BIT_MASK(64))) {
+		rc_printk(RC_NOTE, RC_DRIVER_NAME ": %s 64 bit DMA enabled\n",
+			  __FUNCTION__);
+	} else if (!dma_set_mask(&dev->dev, DMA_BIT_MASK(32)) &&
+		   !dma_set_coherent_mask(&dev->dev, DMA_BIT_MASK(32))) {
+		rc_printk(RC_NOTE, RC_DRIVER_NAME ": %s 64 bit DMA disabled\n",
+			  __FUNCTION__);
+#else
 	if (!pci_set_dma_mask(dev, DMA_BIT_MASK(64)) &&
 	    !pci_set_consistent_dma_mask(dev, DMA_BIT_MASK(64))) {
 		rc_printk(RC_NOTE, RC_DRIVER_NAME ": %s 64 bit DMA enabled\n",
@@ -538,6 +548,7 @@ rc_init_adapter(struct pci_dev *dev, const struct pci_device_id *id)
 		   !pci_set_consistent_dma_mask(dev, DMA_BIT_MASK(32))) {
 		rc_printk(RC_NOTE, RC_DRIVER_NAME ": %s 64 bit DMA disabled\n",
 			  __FUNCTION__);
+#endif
 	} else {
 		rc_printk(RC_ERROR, RC_DRIVER_NAME ": %s failed to "
 			  "set usable DMA mask\n", __FUNCTION__);
@@ -910,10 +921,17 @@ rc_shutdown_adapter(rc_adapter_t *adapter)
 	rc_printk(RC_DEBUG, "%s: free private_mem 0x%p\n",
 		  __FUNCTION__, adapter->private_mem.vaddr);
 	if (adapter->private_mem.vaddr)  {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,4,0)
+		dma_free_coherent(&adapter->pdev->dev,
+				    rc_state.memsize_per_controller,
+				    adapter->private_mem.vaddr,
+				    adapter->private_mem.dma_address);
+#else
 		pci_free_consistent(adapter->pdev,
 				    rc_state.memsize_per_controller,
 				    adapter->private_mem.vaddr,
 				    adapter->private_mem.dma_address);
+#endif
 	}
 
 	/* pci_disable_device(adapter->pdev); */

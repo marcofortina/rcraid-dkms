@@ -1116,9 +1116,16 @@ rc_msg_init(rc_softstate_t *state)
 		if (adapter == (rc_adapter_t *)0) {
 			rc_printk(RC_ERROR, "rc_msg_init null adapter\n");
 		}
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,4,0)
+		addr = dma_alloc_coherent(&adapter->pdev->dev,
+				    state->memsize_per_controller,
+				    &adapter->private_mem.dma_address,
+					GFP_ATOMIC);
+#else
 		addr = pci_alloc_consistent(adapter->pdev,
 					    state->memsize_per_controller,
 					    &adapter->private_mem.dma_address);
+#endif
 
 		if (addr == (void *)0) {
 			rc_printk(RC_ERROR,"rc_msg_init: can not alloc %d bytes of per "
@@ -2193,8 +2200,11 @@ rc_msg_get_dma_memory(alloc_dma_address_t *dma_address)
     adapter = (rc_adapter_t *) dma_address->dev_handle;
     dmaHandle = (dma_addr_t*) &dma_address->dmaHandle;
 
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,4,0)
+    dma_address->cpu_addr = dma_alloc_coherent(&adapter->pdev->dev, dma_address->bytes, dmaHandle, GFP_ATOMIC);
+#else
     dma_address->cpu_addr = pci_alloc_consistent(adapter->pdev,dma_address->bytes, dmaHandle );
+#endif
 
     if (dma_address->cpu_addr)
     {
@@ -2205,7 +2215,11 @@ rc_msg_get_dma_memory(alloc_dma_address_t *dma_address)
 void
 rc_msg_free_dma_memory(rc_adapter_t	*adapter, void *cpu_addr, dma_addr_t dmaHandle, rc_uint32_t bytes)
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,4,0)
+    dma_free_coherent(&adapter->pdev->dev, bytes, cpu_addr, dmaHandle);
+#else
     pci_free_consistent(adapter->pdev, bytes, cpu_addr, dmaHandle);
+#endif
 }
 
 void
@@ -2294,7 +2308,12 @@ rc_msg_map_mem(struct map_memory_s *map)
 			if (len < len_mapped)
 				len_mapped = len;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,4,0)
+			map->physical_address = dma_map_page(&adapter->pdev->dev, page, offset, len_mapped, DMA_BIDIRECTIONAL);
+#else
 			map->physical_address = dma_map_page(&adapter->pdev->dev, page, offset, len_mapped, PCI_DMA_BIDIRECTIONAL);
+#endif
+
             if (dma_mapping_error(&adapter->pdev->dev, map->physical_address))
             {
                 map->number_bytes = 0;
@@ -2305,7 +2324,11 @@ rc_msg_map_mem(struct map_memory_s *map)
     } else if ((map->memory_id & MEM_TYPE) == RC_MEM_DMA) {
         vaddr = (void *)(rc_uint_ptr_t)map->address;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,4,0)
+        map->physical_address = dma_map_single(&adapter->pdev->dev, vaddr, map->number_bytes, DMA_BIDIRECTIONAL);
+#else
         map->physical_address = dma_map_single(&adapter->pdev->dev, vaddr, map->number_bytes, PCI_DMA_BIDIRECTIONAL);
+#endif
         if (dma_mapping_error(&adapter->pdev->dev, map->physical_address))
         {
             map->number_bytes = 0;

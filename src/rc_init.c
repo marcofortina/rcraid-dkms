@@ -36,6 +36,7 @@
 //#define RC_SUPPORT_V60_DRIVERS_ON_HUDSON_PLATFORMS
 
 #include "rc.h"
+#include "rc_ahci.h"
 #include "version.h"
 #include "build_number.h"
 #include "rc_pci_ids.h"

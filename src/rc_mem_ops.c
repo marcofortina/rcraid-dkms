@@ -63,6 +63,11 @@ int rc_sync_mem_copy(rc_uint64_t dst, rc_uint32_t dst_id,
 		     rc_uint32_t byte_count);
 int rc_sync_mem_clear(rc_uint64_t dst, rc_uint32_t dst_id,
 		      rc_uint32_t byte_count);
+int  rc_mop_stats(char *buf, int buf_size);
+rc_sg_list_t *rc_mem_sg_list(rc_addr_list_t *ap,
+		     rc_uint32_t starting_elem,
+		     rc_uint32_t offset,
+		     rc_thread_buf_t *buf);
 
 /* 2.6 added a new macro defined here for older kernel versions. */
 #ifndef for_each_online_cpu

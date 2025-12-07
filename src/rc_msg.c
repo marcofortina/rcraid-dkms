@@ -1311,8 +1311,10 @@ rc_msg_timer(struct timer_list * t)
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,15,0)
 	state = (rc_softstate_t *)data;
-#else
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(6,16,0)
 	state = from_timer(state, t, timer);
+#else
+	state = timer_container_of(state, t, timer);
 #endif
 
 	if ((state->state & ENABLE_TIMER) == 0)
@@ -2452,8 +2454,11 @@ rc_msg_timeout_done(struct timer_list * t)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,15,0)
 	state = (rc_softstate_t *)data;
 	init_timer(&state->msg_timeout);
-#else
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(6,16,0)
 	state = from_timer(state, t, msg_timeout);
+	timer_setup(&state->msg_timeout, rc_msg_timeout_done, 0);
+#else
+	state = timer_container_of(state, t, msg_timeout);
 	timer_setup(&state->msg_timeout, rc_msg_timeout_done, 0);
 #endif
 	up(&state->msg_timeout_sema);

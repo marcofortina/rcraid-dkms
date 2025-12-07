@@ -2549,8 +2549,11 @@ rc_timeout_done(struct timer_list *t)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,15,0)
 	state = (rc_softstate_t *)data;
 	init_timer(&state->rc_timeout);
-#else
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(6,16,0)
 	state = from_timer(state, t, rc_timeout);
+	timer_setup(&state->rc_timeout, rc_timeout_done, 0);
+#else
+	state = timer_container_of(state, t, rc_timeout);
 	timer_setup(&state->rc_timeout, rc_timeout_done, 0);
 #endif
 	up(&state->rc_timeout_sema);

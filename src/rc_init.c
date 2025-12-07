@@ -356,6 +356,9 @@ static Scsi_Host_Template driver_template = {
 	.use_clustering =          ENABLE_CLUSTERING,
 #endif
 	.slave_configure =         rc_slave_cfg,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,17,0)
+	.cmd_size        =         sizeof(rc_srb_t),
+#endif
 };
 
 /*

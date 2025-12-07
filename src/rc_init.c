@@ -184,8 +184,10 @@ int         rc_bios_params(struct scsi_device *sdev, struct block_device *bdev,
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,36)
 int         rc_queue_cmd(struct scsi_cmnd * scp, void (*CompletionRoutine) (struct scsi_cmnd *));
-#else
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(5,15,0)
 int         rc_queue_cmd_lck(struct scsi_cmnd * scp, void (*CompletionRoutine) (struct scsi_cmnd *));
+#else
+int         rc_queue_cmd_lck(struct scsi_cmnd * scp);
 #endif
 
 #ifdef RC_AHCI_SUPPORT
@@ -1389,12 +1391,16 @@ int rc_mpt2_shutdown(rc_adapter_t *adapter)
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,36)
 int rc_queue_cmd (struct scsi_cmnd * scp, void (*CompletionRoutine) (struct scsi_cmnd *))
-#else
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(5,15,0)
 int rc_queue_cmd_lck (struct scsi_cmnd * scp, void (*CompletionRoutine) (struct scsi_cmnd *))
+#else
+int rc_queue_cmd_lck (struct scsi_cmnd * scp)
 #endif
 
 {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,15,0)
 	scp->scsi_done = CompletionRoutine;
+#endif
 	//#define FAIL_ALL_IO 0
 
 #ifdef FAIL_ALL_IO

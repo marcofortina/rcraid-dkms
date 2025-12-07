@@ -8,8 +8,11 @@
 #include <linux/module.h>
 #include <linux/fs.h>
 #include <linux/miscdevice.h>
+#include <linux/version.h>
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5,14,0)
+#ifndef RHEL_RCBUILD
 #include <linux/genhd.h>
+#endif
 #endif
 #include <linux/sched.h>
 #include <linux/completion.h>

@@ -1470,8 +1470,10 @@ rc_msg_send_srb(struct scsi_cmnd * scp)
 	srb->timeout      = scsi_cmd_to_rq(scp)->timeout/HZ;
 #elif (LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,26))
 	srb->timeout      = scp->timeout_per_command/HZ;
-#else
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(5,14,0)
 	srb->timeout      = scp->request->timeout/HZ;
+#else
+	srb->timeout      = scsi_cmd_to_rq(scp)->timeout/HZ;
 #endif
 	srb->seq_num      = rc_srb_seq_num++;
 
@@ -1873,7 +1875,7 @@ rc_msg_srb_complete(struct rc_srb_s *srb)
 	if (srb->status == RC_SRB_STATUS_SUCCESS) {
 		 //rc_printk(RC_DEBUG2, "%s: seq_num %d SUCCESS\n", __FUNCTION__,
 		 //          srb->seq_num);
-		scp->result = DID_OK << 16 | COMMAND_COMPLETE << 8 | GOOD;
+		scp->result = DID_OK << 16 | COMMAND_COMPLETE << 8 | SAM_STAT_GOOD;
 
 		GET_IO_REQUEST_LOCK_IRQSAVE(irql);
 		scp->scsi_done(scp);
@@ -1913,7 +1915,7 @@ rc_msg_srb_complete(struct rc_srb_s *srb)
 	 */
 	rc_dump_scp(scp);
 
-	scp->result = DID_OK << 16 | COMMAND_COMPLETE << 8 | CHECK_CONDITION;
+	scp->result = DID_OK << 16 | COMMAND_COMPLETE << 8 | SAM_STAT_CHECK_CONDITION;
 
 	if (! (srb->flags & RC_SRB_FLAGS_SENSEVALID)) {
 		if (srb->status == RC_SRB_STATUS_INVALID_REQUEST) {

@@ -1220,7 +1220,6 @@ rcraid_shutdown_one(
 
 #ifdef RC_AHCI_SUPPORT
 #define ICH6_REG_OFFSET_GHC     0x04    // Global HBA Control register
-#define AHCI_GHC_IE             (1 << 1)  // global IRQ enable
 /*
  * disable HW interrupts on all ports on an adapter
  */

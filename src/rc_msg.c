@@ -364,7 +364,11 @@ void rc_msg_suspend(rc_softstate_t *state, rc_adapter_t* adapter)
 	{
     	rc_printk(RC_INFO2, "rc_msg_shutdown: stop OSIC timer\n");
 		state->state &= ~ENABLE_TIMER;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,1,0)
 		del_timer_sync(&state->timer);
+#else
+		timer_delete_sync(&state->timer);
+#endif
 	}
     rc_printk(RC_ALERT, "rc_msg_suspend: pausing for 1/4 second\n");
     rc_msg_timeout(HZ>>2);
@@ -457,7 +461,11 @@ rc_msg_shutdown( rc_softstate_t *statep)
 
 	rc_printk(RC_INFO2, "rc_msg_shutdown: stop OSIC timer\n");
 	statep->state &= ~ENABLE_TIMER;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,1,0)
 	del_timer_sync(&statep->timer);
+#else
+	timer_delete_sync(&statep->timer);
+#endif
 	rc_printk(RC_DEBUG, "rc_msg_shutdown: pausing for 1/4 second\n");
 	rc_msg_timeout(HZ>>2);
 

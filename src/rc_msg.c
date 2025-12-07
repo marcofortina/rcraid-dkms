@@ -81,7 +81,12 @@ static struct rc_interface_s *rc_interface_header = &RC_OurInterfaceStruct;
 
 int rc_srb_seq_num = 0;
 
-static void rc_sysrq_intr (int key
+static void rc_sysrq_intr (
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,6,0)
+			   unsigned char key
+#else
+			   int key
+#endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
 			   ,struct pt_regs *pt_regs
 #endif
@@ -90,7 +95,12 @@ static void rc_sysrq_intr (int key
 #endif
 			   );
 
-static void rc_sysrq_state (int key
+static void rc_sysrq_state (
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,6,0)
+			   unsigned char key
+#else
+			   int key
+#endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
 			    ,struct pt_regs *pt_regs
 #endif
@@ -2583,7 +2593,12 @@ rc_msg_stats(char *buf, int buf_size)
 	return(cnt);
 }
 
-static void rc_sysrq_intr (int key
+static void rc_sysrq_intr (
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,6,0)
+			   unsigned char key
+#else
+			   int key
+#endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
 			   ,struct pt_regs *pt_regs
 #endif
@@ -2607,7 +2622,12 @@ static void rc_sysrq_intr (int key
 	rc_printk(RC_ALERT, "scheduling tasklet interrupt\n");
 }
 
-static void rc_sysrq_state (int key
+static void rc_sysrq_state (
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,6,0)
+			   unsigned char key
+#else
+			   int key
+#endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
 			    ,struct pt_regs *pt_regs
 #endif

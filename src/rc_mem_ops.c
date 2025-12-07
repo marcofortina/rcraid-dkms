@@ -765,7 +765,7 @@ rc_check_addr_list(rc_addr_list_t *addr_list)
 }
 
 
-static int __inline__
+static __inline__ int
 rc_addr_list_elements( rc_addr_list_t  *ap)
 {
 	int num_elem;

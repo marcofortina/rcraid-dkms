@@ -8,7 +8,9 @@
 #include <linux/module.h>
 #include <linux/fs.h>
 #include <linux/miscdevice.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,14,0)
 #include <linux/genhd.h>
+#endif
 #include <linux/sched.h>
 #include <linux/completion.h>
 

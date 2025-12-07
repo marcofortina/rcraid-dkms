@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 #  Script to uninstall the RAIDCore drivers from the SDK for supported platforms
 #  (RedHat and SuSE).

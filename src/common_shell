@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Common shell routines used by the top level install script (SDK and driver
 # disks) and also from the OS specific scripts in the SDK (also contains

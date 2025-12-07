@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #  Script to install the driver into the /lib/modules tree for SuSE distros.
 #  By default new drivers will be installed for the currently running kernel.

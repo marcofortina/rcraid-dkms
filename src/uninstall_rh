@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #
 # Script to remove the driver(s) from an existing SuSE linux install

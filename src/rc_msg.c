@@ -23,6 +23,8 @@
 #include "linux/sysrq.h"
 #include "linux/nmi.h"
 #include "asm/msr.h"
+
+#include <linux/version.h>
 #include <linux/page-flags.h>
 #include <linux/vmalloc.h>
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,0,0)

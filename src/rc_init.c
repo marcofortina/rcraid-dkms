@@ -19,8 +19,6 @@
  *
  ****************************************************************************/
 
-#include "version.h"
-
 #define RC_DRIVER_VERSION       RC_VERSION_STR
 #if !defined(RC_DRIVER_BUILD_DATE)
 #define RC_DRIVER_BUILD_DATE    __DATE__
@@ -40,6 +38,7 @@
 #include "version.h"
 #include "build_number.h"
 #include "rc_pci_ids.h"
+#include <linux/version.h>
 #include <linux/hdreg.h>
 #include <linux/reboot.h>
 #include <linux/pci.h>

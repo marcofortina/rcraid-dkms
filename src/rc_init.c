@@ -294,43 +294,6 @@ typedef struct rc_bios_disk_parameters
 	int cylinders;
 } rc_bios_disk_parameters_t;
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
-typedef struct rc_proc_entry {
-    char                    *name;
-    struct proc_dir_entry   *proc_dir;
-    int                     mode;
-    int                     which;
-} rc_proc_entry_t;
-
-static rc_proc_entry_t rc_proc_dir_entries[] = {
-
-#define RC_PROC_DEBUG 1
-    { "debug", NULL, S_IRUGO|S_IWUSR, RC_PROC_DEBUG},
-
-#define RC_PROC_VERSION 2
-    { "version", NULL, 0, RC_PROC_VERSION},
-
-#define RC_PROC_DIPM 3
-    { "dipm", NULL, S_IRUGO|S_IWUSR, RC_PROC_DIPM},
-
-#define RC_PROC_HIPM 4
-    { "hipm", NULL, S_IRUGO|S_IWUSR, RC_PROC_HIPM},
-
-#define RC_PROC_AN 5
-    { "an", NULL, S_IRUGO|S_IWUSR, RC_PROC_AN},
-
-#define RC_PROC_NCQ 6
-    { "ncq", NULL, S_IRUGO|S_IWUSR, RC_PROC_NCQ},
-
-#define RC_PROC_ZPODD   7
-    { "zpodd", NULL, S_IRUGO|S_IWUSR, RC_PROC_ZPODD},
-
-#define RC_PROC_SLEEP   8
-    { "suspend_delay", NULL, S_IRUGO | S_IWUSR, RC_PROC_SLEEP },
-};
-
-#endif  /* LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0) */
-
 static DEF_SCSI_QCMD(rc_queue_cmd)
 
 static Scsi_Host_Template driver_template = {
@@ -572,7 +535,6 @@ rc_init_adapter(struct pci_dev *dev, const struct pci_device_id *id)
 		return -ENODEV;
 	}
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 13, 0)
     // Check for device before calling init_func to ensure RC_EnableZPODD properly set.
     {
         acpi_handle                 handle = DEVICE_ACPI_HANDLE(&adapter->pdev->dev);
@@ -697,7 +659,6 @@ rc_init_adapter(struct pci_dev *dev, const struct pci_device_id *id)
         rc_printk(RC_INFO, "### %s(): RC_EnableZPODD = %d, RC_ODD_Device = ODD%c, RC_ODDZDevAddr = 0x%x, RC_ODD_GpeNumber = %d\n",
                 __FUNCTION__, RC_EnableZPODD, ODD_Devices[RC_ODD_Device], RC_ODDZDevAddr, RC_ODD_GpeNumber);
     }
-#endif  /* LINUX_VERSION_CODE >= KERNEL_VERSION(3, 13, 0) */
 
 	/* Call initialization routine */
 	rc_printk(RC_DEBUG, "%s: Initializing hardware...\n", __FUNCTION__);
@@ -1524,43 +1485,6 @@ rc_eh_hba_reset (struct scsi_cmnd *scp)
 //=============================================================================
 //
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
-
-static int
-rc_proc_read(char *buf, char **start, off_t offset, int buf_size, int *peof, void *data);
-
-static int
-rc_proc_write(struct file *file, const char __user *buf, unsigned long count, void *data);
-
-void rc_init_proc(void)
-{
-    rc_proc_entry_t *pe;
-    struct proc_dir_entry *pde;
-    int i;
-
-    if (!driver_template.proc_dir)
-    {
-        rc_printk(RC_ERROR, "rc_info: no entry for /proc/scsi/rcraid yet\n");
-    } else {
-        for (i = 0, pe = rc_proc_dir_entries;
-             i < sizeof(rc_proc_dir_entries) / sizeof(rc_proc_entry_t);
-             ++i, ++pe) {
-            if (!(pde = create_proc_entry(pe->name, pe->mode,
-                              driver_template.proc_dir)))
-                rc_printk(RC_ERROR, "rc_info: can't create entry for "
-                      "/proc/scsi/rcraid/%s\n", pe->name);
-            else {
-                pe->proc_dir = pde;
-                pde->read_proc = rc_proc_read;
-                pde->write_proc = rc_proc_write;
-                pde->data = (void *)pe;
-            }
-        }
-    }
-}
-
-#else
-
 static int rc_proc_show_int(struct seq_file *sfile, void *v)
 {
     seq_printf(sfile, "%d\n", *((int *) sfile->private));
@@ -2001,7 +1925,6 @@ rc_remove_proc(void)
     }
 }
 
-#endif  /* LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0) */
 //
 //=============================================================================
 
@@ -2088,12 +2011,6 @@ rc_slave_cfg(struct scsi_device *sdev)
 rc_slave_cfg(struct scsi_device *sdev, struct queue_limits *qlimits)
 #endif
 {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
-	if (sdev->tagged_supported)
-		scsi_adjust_queue_depth(sdev, MSG_ORDERED_TAG, tag_q_depth);
-	else
-		scsi_adjust_queue_depth(sdev, 0, 1);
-#endif  /* LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0) */
 	return 0;
 }
 
@@ -2113,382 +2030,6 @@ rc_ioctl (struct scsi_device * scsi_dev_ptr, int cmd, void *arg)
 		  _IOC_NR(cmd), direction);
 	return(-ENOTTY);
 }
-
-
-
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
-
-static int info_buffer_size = 0;
-static char *info_buffer = NULL;
-
-/*
- * rc_proc_info()
- *
- *  Implement /proc/scsi/<drivername>/<n>.  Called from scsi layer.
- *  Used to export driver statistics and other infos to the world outside
- *  the kernel using the proc file system. Also provides an interface to
- *  feed the driver with information.
- *
- * Postconditions
- *  For reads
- *  - if Offset > 0 return next portion of previous built buffer, or 0 if all
- *      of the buffer has been returned
- *  - if Offset == 0 Write data to ProcBuffer and set the Startptr to
- *  beginning of ProcBuffer, return the number of characters written.
- *  For writes
- *  - writes currently not supported, return 0
- * Parameters:
- *    struct Scsi_Host *shost,  which host we are after (2.6+)
- *    char *buf,    read/write buffer
- *    char **start, start of valid data in the buffer
- *    off_t offset, Offset from the beginning of the imaginary file
- *    int buf_size, bytes available
- *    int host_num, SCSI host number (2.4)
- *    int write     direction of dataflow: TRUE for writes, FALSE for reads
- */
-int
-rc_proc_info (struct Scsi_Host *shost, char *buf, char **start, off_t offset, int buf_size,               int write)
-{
-	int host_num = shost->host_no;
-
-	int     len, cnt;
-	int     length;
-    int     size;
-    char    *cp;
-   	rc_printk(RC_DEBUG, "rc_proc_directory_info, buf size %d offset %d\n",
-	          buf_size, (int)offset);
-
-	if ((write))
-		return (0);
-
-    //New request
-    if (offset == 0) {
-        if (info_buffer != NULL) {
-            kfree(info_buffer);
-        }
-        info_buffer = NULL;
-        info_buffer_size = 0;
-    }
-    //End of Request
-    else if (offset > info_buffer_size - 1) {
-        if (info_buffer != NULL) {
-            kfree(info_buffer);
-        }
-        info_buffer = NULL;
-        info_buffer_size = 0;
-        return (0);
-    }
-    //Continue servicing a request in progress
-    else {
-        *start = buf;
-        length = min_t(int, buf_size, info_buffer_size - offset);
-        memcpy(buf, &info_buffer[offset], length);
-        return length;
-    }
-
-    size = 4096;
-    info_buffer = kmalloc(size, GFP_KERNEL);
-    if (info_buffer == NULL) {
-        length = sprintf(buf, "rcraid - kmalloc error at line %d\n",
-            __LINE__);
-        return length;
-    }
-
-    //This is the first time being called for a request build the string
-	cp = info_buffer;
-	len = 0;
-	cnt = 0;
-
-	len = snprintf (cp, size,
-			"%s Controller %s V%s build number %s built on %s  %d\n\n",
-			VER_COMPANYNAME_STR,
-			RC_DRIVER_NAME,
-			RC_DRIVER_VERSION,
-			RC_BUILD_NUMBER,
-			RC_DRIVER_BUILD_DATE,
-			host_num);
-    cp  += len;
-	cnt += len;
-
-	len = rc_msg_stats(cp, size - cnt);
-	cp  += len;
-	cnt += len;
-
-	len = rc_mop_stats(cp, size - cnt);
-	cnt += len;
-
-
-    info_buffer_size = (cnt);
-
-    //return minimum of actual string size or max buffer length (1024 bytes)
-    length = min_t(int, cnt, buf_size);
-    memcpy(buf, &info_buffer[0], length);
-    *start = buf;
-
-	return (length);
-}
-
-
-/*
- * rc_proc_read()
- *
- * Implement /proc/scsi/<drivername>/... (everything except <host_no>)
- *  Called from the generic /proc filesystem layer.
- *  Used to export driver statistics and other info to the world outside
- *  the kernel using the proc file system.
- *
- * Postconditions
- *  normal:
- *  - if offset > 0 return 0
- *  - if offset == 0 Write data to buf, set *start to
- *    beginning of buf, set *peof = 1, return the number of characters written.
- *    offset is "entry number":
- *    write data for the offset'th entry to buf, set *start to number of records returned,
- *   set *peof = 1 if this is the last entry, and return the number of characters written.
- */
-
-static int
-rc_proc_read (char *buf,        // read buffer (in kernel space)
-	      char **start,     // start of valid data in the buffer or index of element (see proc_file_read())
-	      off_t offset,     // Offset from the beginning of the imaginary file
-	      int buf_size,     // bytes available
-	      int *peof,        // set to 1 if we are at the end
-	      void *data)       // proc_dirent->data
-{
-	int len, cnt;
-	char *cp;
-
-	rc_printk(RC_DEBUG, "rc_proc_read, start %p, offset %lu, buf size %d, "
-		  "data %p\n", *start, offset, buf_size, data);
-
-	cp = buf;
-	len = 0;
-	cnt = 0;
-
-	switch (((rc_proc_entry_t *)data)->which) {
-
-	case RC_PROC_VERSION:
-		*peof = 1;
-		if (offset)
-			break;
-		len = snprintf (cp, buf_size - cnt, "V%s %s\n", RC_DRIVER_VERSION,
-				RC_BUILD_NUMBER);
-		cp  += len;
-		cnt += len;
-		*start = buf;
-		break;
-
-	case RC_PROC_DEBUG:
-		*peof = 1;
-		if (offset)
-			break;
-
-		len = snprintf(cp, buf_size - cnt, "%d %d %d\n", rc_msg_level, RC_PANIC,
-			       RC_TAIL - 1);
-		cp  += len;
-		cnt += len;
-		*start = buf;
-		break;
-
-	case RC_PROC_DIPM:
-		*peof = 1;
-		if (offset)
-			break;
-
-		len = snprintf(cp, buf_size - cnt, "%X\n", RC_EnableDIPM);
-		cp  += len;
-		cnt += len;
-		*start = buf;
-		break;
-
-	case RC_PROC_HIPM:
-		*peof = 1;
-		if (offset)
-			break;
-
-		len = snprintf(cp, buf_size - cnt, "%X\n", RC_EnableHIPM);
-		cp  += len;
-		cnt += len;
-		*start = buf;
-		break;
-
-	case RC_PROC_AN:
-		*peof = 1;
-		if (offset)
-			break;
-
-		len = snprintf(cp, buf_size - cnt, "%X\n", RC_EnableAN);
-		cp  += len;
-		cnt += len;
-		*start = buf;
-		break;
-
-    case RC_PROC_NCQ:
-		*peof = 1;
-		if (offset)
-			break;
-
-		len = snprintf(cp, buf_size - cnt, "%X\n", RC_EnableNCQ);
-		cp  += len;
-		cnt += len;
-		*start = buf;
-		break;
-
-    case RC_PROC_ZPODD:
-        *peof = 1;
-        if (offset)
-            break;
-
-        len = snprintf(cp, buf_size - cnt, "%X\n", RC_EnableZPODD);
-        cp += len;
-        cnt += len;
-        *start = buf;
-        break;
-
-	default:
-		rc_printk(RC_ERROR, "rc_proc_read, unexpected data %p\n", data);
-		*peof=1;
-		break;
-	}
-
-	return (cnt);
-}
-
-
-/*
- *  rc_proc_write()
- *
- *      Implement writes to /proc/scsi/<drivername>/... (everything except <host_no>)
- *      Called from the generic /proc filesystem layer.
- *      Used to feed the driver with information.
- *
- *  Postconditions
- *      - if offset > 0 return 0
- *      - if offset == 0 Write data to buf, set *start to
- *        beginning of buf, set *peof = 1, return the number of characters written.
- */
-
-static int
-rc_proc_write(struct file *file,    // our file control structure
-	      const char __user *buf,      // the input buffer (user data address)
-	      unsigned long count,  // how many bytes we are being sent
-	      void *data)           // which /proc/scsi/rcraid/* file this is
-{
-	char page[10];
-	int ret, tmp;
-	unsigned int utmp;
-	rc_send_arg_t   args;
-
-	/* should check file offset? */
-	if (count >= sizeof (page))
-		return -EOVERFLOW;
-
-	if (!count)
-		return 0;
-
-	//if (!(page = (char *) __get_free_page(GFP_KERNEL)))
-	//return -ENOMEM;
-	if (copy_from_user(page, buf, count)) {
-		//free_page((ulong) page);
-		return -EFAULT;
-	}
-
-	ret = -EINVAL;
-	switch (((rc_proc_entry_t *)data)->which) {
-
-	case RC_PROC_DEBUG:
-		/* set debug message level, scaled to match module parameter */
-		page[count] = '\0';
-		tmp = rc_msg_level;
-		sscanf(page, "%i", &tmp);
-		if (tmp >= 0 && tmp < RC_TAIL) {
-			rc_msg_level = tmp;
-			// Update hardware communications layer
-			args.call_type = RC_CTS_SET_MSG_LEVEL;
-			args.u.max_print_severity = rc_msg_level;
-			rc_send_msg(&args);
-		}
-		ret = count;
-		break;
-
-	case RC_PROC_DIPM:
-		/* set DIPM */
-		page[count] = '\0';
-		utmp = RC_EnableDIPM;
-		sscanf(page, "%X", &utmp);
-		if (utmp >= 0 && utmp <= 0xFFFFFFFF) {
-			RC_EnableDIPM = utmp;
-		}
-		ret = count;
-		break;
-
-	case RC_PROC_HIPM:
-		/* set HIPM */
-		page[count] = '\0';
-		utmp = RC_EnableHIPM;
-		sscanf(page, "%X", &utmp);
-		if (utmp >= 0 && utmp <= 0xFFFFFFFF) {
-			RC_EnableHIPM = utmp;
-		}
-		ret = count;
-		break;
-
-	case RC_PROC_AN:
-		/* set AN */
-		page[count] = '\0';
-		utmp = RC_EnableAN;
-		sscanf(page, "%X", &utmp);
-		if (utmp >= 0 && utmp <= 0xFFFFFFFF) {
-			RC_EnableAN = utmp;
-            memset(&args, 0, sizeof(args));
-            args.call_type = RC_CTS_CHANGE_PARAM;
-            args.u.change_param.param = RC_CTS_PARAM_AN;
-            args.u.change_param.value = RC_EnableAN;
-            rc_send_msg(&args);
-		}
-		ret = count;
-		break;
-
-    case RC_PROC_NCQ:
-		/* set NCQ */
-		page[count] = '\0';
-		utmp = RC_EnableNCQ;
-		sscanf(page, "%X", &utmp);
-		if (utmp >= 0 && utmp <= 0xFFFFFFFF) {
-			RC_EnableNCQ = utmp;
-		}
-		ret = count;
-		break;
-
-    case RC_PROC_ZPODD:
-        /* set ZPODD */
-        page[count] = '\0';
-        utmp = RC_EnableZPODD;
-        sscanf(page, "%X", &utmp);
-        if (utmp >= 0 && utmp <= 1)
-        {
-            RC_EnableZPODD = utmp;
-            memset(&args, 0, sizeof(args));
-            args.call_type = RC_CTS_CHANGE_PARAM;
-            args.u.change_param.param = RC_CTS_PARAM_ZPODD;
-            args.u.change_param.value = RC_EnableZPODD;
-            rc_send_msg(&args);
-        }
-        ret = count;
-        break;
-
-	default:
-		rc_printk(RC_ERROR, "pc_proc_write, unexpected proc device %p\n", data);
-		ret = -EINVAL;
-		break;
-	}
-
-	// free_page((ulong) page);
-	return (ret);
-
-}
-#endif
 
 static char rc_print_buf[1024];
 void
@@ -2670,27 +2211,6 @@ static struct pci_driver rcraid_pci_driver = {
 
 };
 
-#if LINUX_VERSION_CODE <= KERNEL_VERSION(3, 17, 0)
-u32
-rc_ahci_regread(void *context, u32 offset)
-{
-#if !defined(CONFIG_64BIT)
-    return *((volatile u32 *) (u32) offset);
-#else
-    return *((volatile u32 *) (u64) offset);
-#endif  /* !defined(CONFIG_64BIT) */
-}
-
-void
-rc_ahci_regwrite(void *context, u32 offset, u32 value)
-{
-#if !defined(CONFIG_64BIT)
-    *((volatile u32 *) (u32) offset) = value;
-#else
-    *((volatile u32 *) (u64) offset) = value;
-#endif  /* !defined(CONFIG_64BIT) */
-}
-#else
 u32
 rc_ahci_regread(void *context, u32 offset)
 {
@@ -2720,7 +2240,6 @@ rc_ahci_regwrite(void *context, u32 offset, u32 value)
     if (mmio)
         writel(value, mmio + offset);
 }
-#endif  /* LINUX_VERSION_CODE < KERNEL_VERSION(3, 17, 0) */
 
 static struct ctl_table rcraid_table[] = {
 	{
@@ -2828,11 +2347,9 @@ static int __init rcraid_init(void)
 
     ssleep(5);
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
     rc_init_proc();
-#endif  /* LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0) */
 
-	return 0;
+    return 0;
 }
 
 static void __exit rcraid_exit(void)

@@ -354,11 +354,8 @@ rc_mem_clear_list(rc_sg_list_t *dst, int byte_count)
 
 				pfn = dst_dma_addr >> PAGE_SHIFT;
 				dst_page = pfn_to_page(pfn);
-#if LINUX_VERSION_CODE > KERNEL_VERSION(3,6,0)
                 dst_vaddr = kmap_atomic(dst_page);
-#else
-                dst_vaddr = kmap_atomic(dst_page, KM_USER1);
-#endif
+
 				if (dst_vaddr == 0)
 					return 0;
 
@@ -393,11 +390,8 @@ rc_mem_clear_list(rc_sg_list_t *dst, int byte_count)
 		if (dst_mapped == 0) {
 			if ((dst->sg_mem_type & MEM_TYPE) == RC_MEM_PADDR) {
 				if (dst_page)
-#if LINUX_VERSION_CODE > KERNEL_VERSION(3,6,0)
-                    kunmap_atomic(dst_vaddr);
-#else
-					kunmap_atomic(dst_vaddr, KM_USER1);
-#endif
+					kunmap_atomic(dst_vaddr);
+
 				dst_page = (struct page *)0;
 				if (dst_offset == dst->sg_elem[dst_idx].size) {
 					dst_idx++;
@@ -413,11 +407,8 @@ rc_mem_clear_list(rc_sg_list_t *dst, int byte_count)
 	}
 
 	if (dst_page)
-#if LINUX_VERSION_CODE > KERNEL_VERSION(3,6,0)
         kunmap_atomic(dst_vaddr);
-#else
-		kunmap_atomic(dst_vaddr, KM_USER1);
-#endif
+
 	if (residual)
 		rc_printk(RC_PANIC, "rc_mem_clear_list: residual is not 0 at end "
 			  "of loop\n");
@@ -493,18 +484,12 @@ rc_mem_copy_list ( rc_sg_list_t *dst, rc_sg_list_t *src, int byte_count)
 
 				pfn = src_dma_addr >> PAGE_SHIFT;
 				src_page = pfn_to_page(pfn);
-#if LINUX_VERSION_CODE > KERNEL_VERSION(3,6,0)
                 src_vaddr = kmap_atomic(src_page);
-#else
-				src_vaddr = kmap_atomic(src_page, KM_USER0);
-#endif
+
 				if (src_vaddr == 0) {
 					if (dst_page)
-#if LINUX_VERSION_CODE > KERNEL_VERSION(3,6,0)
                         kunmap_atomic(dst_vaddr);
-#else
-						kunmap_atomic(dst_vaddr, KM_USER1);
-#endif
+
 					ret = 0;
 					goto out;
 				}
@@ -541,18 +526,12 @@ rc_mem_copy_list ( rc_sg_list_t *dst, rc_sg_list_t *src, int byte_count)
 
 				pfn = dst_dma_addr >> PAGE_SHIFT;
 				dst_page = pfn_to_page(pfn);
-#if LINUX_VERSION_CODE > KERNEL_VERSION(3,6,0)
                 dst_vaddr = kmap_atomic(dst_page);
-#else
-				dst_vaddr = kmap_atomic(dst_page, KM_USER1);
-#endif
+
 				if (dst_vaddr == 0) {
 					if (src_page)
-#if LINUX_VERSION_CODE > KERNEL_VERSION(3,6,0)
                         kunmap_atomic(src_vaddr);
-#else
-						kunmap_atomic(src_vaddr, KM_USER0);
-#endif
+
 					ret = 0;
 					goto out;
 				}
@@ -599,11 +578,8 @@ rc_mem_copy_list ( rc_sg_list_t *dst, rc_sg_list_t *src, int byte_count)
 		if (src_mapped == 0) {
 			if ((src->sg_mem_type & MEM_TYPE) == RC_MEM_PADDR) {
 				if (src_page)
-#if LINUX_VERSION_CODE > KERNEL_VERSION(3,6,0)
                     kunmap_atomic(src_vaddr);
-#else
-					kunmap_atomic(src_vaddr, KM_USER0);
-#endif
+
 				src_page = (struct page *)0;
 				if (src_offset == src->sg_elem[src_idx].size) {
 					src_idx++;
@@ -619,11 +595,8 @@ rc_mem_copy_list ( rc_sg_list_t *dst, rc_sg_list_t *src, int byte_count)
 		if (dst_mapped == 0) {
 			if ((dst->sg_mem_type & MEM_TYPE) == RC_MEM_PADDR) {
 				if (dst_page)
-#if LINUX_VERSION_CODE > KERNEL_VERSION(3,6,0)
                     kunmap_atomic(dst_vaddr);
-#else
-					kunmap_atomic(dst_vaddr, KM_USER1);
-#endif
+
 				dst_page = (struct page *)0;
 				if (dst_offset == dst->sg_elem[dst_idx].size) {
 					dst_idx++;
@@ -640,17 +613,11 @@ rc_mem_copy_list ( rc_sg_list_t *dst, rc_sg_list_t *src, int byte_count)
 out:
 
 	if (src_page)
-#if LINUX_VERSION_CODE > KERNEL_VERSION(3,6,0)
         kunmap_atomic(src_vaddr);
-#else
-		kunmap_atomic(src_vaddr, KM_USER0);
-#endif
+
 	if (dst_page)
-#if LINUX_VERSION_CODE > KERNEL_VERSION(3,6,0)
         kunmap_atomic(dst_vaddr);
-#else
-		kunmap_atomic(dst_vaddr, KM_USER1);
-#endif
+
 	if (residual)
 		rc_printk(RC_PANIC, "rc_mem_copy_list: residual is not 0 at end of "
 			  "loop\n");

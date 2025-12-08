@@ -187,9 +187,7 @@ typedef struct rc_thread_s {
 
 extern rc_thread_t rc_thread[];
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,13,0)
 #define DEVICE_ACPI_HANDLE(dev) ((acpi_handle)ACPI_HANDLE(dev))
-#endif
 
 // Prototypes for functions defined in rc_init.c
 void rc_shutdown_host(struct Scsi_Host *host_ptr);

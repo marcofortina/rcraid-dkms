@@ -574,7 +574,6 @@ int rc_wq_handler(void *work)
 	            if (args->u.acpi.inPtr == NULL && args->u.acpi.outPtr == NULL &&
 	                    args->u.acpi.inSize == 0 && args->u.acpi.outSize == 0)
 	            {
-//#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,2,1)
                     //
                     // Somewhere after 3.2.0, ACPI no longer enables GPE's if the device
                     // is WAKE capable. Instead, ACPI relies on the power management system
@@ -592,15 +591,12 @@ int rc_wq_handler(void *work)
                         acpi_status ac_stat;
 
                         // Clear any pending notifcations
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,0,0)
-                        ac_stat = acpi_clear_gpe(NULL, RC_ODD_GpeNumber, ACPI_NOT_ISR);
-#else
                         ac_stat = acpi_clear_gpe(NULL, RC_ODD_GpeNumber);
-#endif  /* LINUX_VERSION_CODE < KERNEL_VERSION(3,0,0) */
+
                         // Arm for notification
                         ac_stat = acpi_enable_gpe(NULL, RC_ODD_GpeNumber);
                     }
-//#endif
+
 	                // Invoke only
 	                args->u.acpi.status =
 	                        acpi_evaluate_object((acpi_handle) rc_work->handle, rc_work->method, NULL, NULL);
@@ -824,7 +820,6 @@ rc_receive_msg(void)
 
     case RC_ACPI_INVOKE:
         {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 13, 0)
             rc_adapter_t    *adapter = rc_dev[0];       // FIXME
             struct pci_dev  *pdev = adapter->pdev;
             acpi_handle     handle = DEVICE_ACPI_HANDLE(&pdev->dev);
@@ -867,7 +862,6 @@ rc_receive_msg(void)
                     }
                 }
             }
-#endif  /* LINUX_VERSION_CODE >= KERNEL_VERSION(3, 13, 0) */
         }
         break;
 
@@ -1749,12 +1743,6 @@ rc_msg_srb_q_tasklet(  unsigned long arg)
 
 			rc_msg_process_srb(srb);
 			spin_lock_irqsave(&state->srb_q.lock, irql);
-			if (stat_last_pending != atomic_read(&state->intr_pending)) {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0) // (4,2,0)
-				if (!stat_intr_low)
-					rdtscl(stat_intr_low);
-#endif	/* LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0) // (4,2,0) */
-			}
 		}
 		// STATS
 		/*
@@ -1771,9 +1759,6 @@ rc_msg_srb_q_tasklet(  unsigned long arg)
 		}
 		sp->total_intr_waiting += stat_last_pending;
 		if (stat_intr_low) {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0) // (4,2,0)
-			rdtscl(stat_intr_hi);
-#endif	/* LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0) // (4,2,0) */
 			stat_intr_hi -= stat_intr_low;
 			if (sp->max_intr_delay < stat_intr_hi)
 				sp->max_intr_delay = stat_intr_hi;

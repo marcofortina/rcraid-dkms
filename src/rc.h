@@ -19,7 +19,7 @@
  *
  ****************************************************************************/
 
-#ifndef _BC_OSHEADERS_H_
+#ifndef _RC_OSHEADERS_H_
 #define _RC_OSHEADERS_H_
 
 #include <linux/version.h>

@@ -31,6 +31,10 @@
 #include <scsi/sg.h>
 #include "rc_ahci.h"
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,18,0)
+#include <linux/dma-mapping.h>
+#endif
+
 int  rc_setup_communications(void);
 void rc_send_msg(struct rc_send_arg_s *p_send_arg);
 void rc_msg_process_srb(rc_srb_t *srb);

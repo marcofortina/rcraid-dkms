@@ -50,6 +50,10 @@
 #include <linux/sysctl.h>
 #include <linux/pm_runtime.h>
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,18,0)
+#include <linux/dma-mapping.h>
+#endif
+
 // FIXME: some older kernels still supported by RAIDCore do not have
 //        DMA_BIT_MASK().  Remove once support for them has been dropped.
 #ifndef DMA_BIT_MASK

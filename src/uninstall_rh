@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# Script to remove the driver(s) from an existing SuSE linux install
+# Script to remove the driver(s) from an existing RHEL linux install
 #
 # Copyright © 2006-2008 Ciprico Inc. All rights reserved.
 # Copyright © 2008-2013 Dot Hill Systems Corp. All rights reserved.

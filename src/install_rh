@@ -66,7 +66,7 @@ USE_SWL=${USE_SWL//none/ }
 for swl in ${USE_SWL}; do
     if lists_intersect $swl "${SWL_SUPPORTED}"; then
         echo "$swl is not a supported SWL option"
-        usage_suse $0
+        usage_rh $0
         exit 1
     fi
 done

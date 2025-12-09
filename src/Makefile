@@ -76,9 +76,6 @@ install:
 	@if [ -e /etc/redhat-release ]; then                            \
 	    echo "performing Redhat install";                           \
 	    (sh ./install_rh $(KVERS));                                 \
-	elif [ -e /etc/SuSE-release ]; then                             \
-	    echo "performing SuSE install";                             \
-	    (sh ./install_suse $(KVERS));                               \
 	else                                                            \
 	    echo "performing generic install";                          \
 	    cp rcraid.ko /lib/modules/$(KVERS)/kernel/drivers/scsi;     \

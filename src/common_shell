@@ -31,15 +31,6 @@ SWL_TYPE_ahci=0x00000002
 SWL_TYPE_lsi1068=0x00000004
 SWL_TYPE_lsi2008=0x00000008
 
-function usage_suse() {
-    echo "usage: `basename $0` [<options>][<kernel>]" >&2
-    echo "  options:" >&2
-    echo "    USE_SWL=[none,ahci,lsi1068,lsi2008] - comma seperated list of onboard chips RAIDCore " >&2
-    echo "                                 should use.  Default is all." >&2
-    echo "  ex: `basename $0` USE_SWL=ahci 2.6.16.21-0.25-smp" >&2
-    exit 1
-}
-
 function usage_rh() {
     echo "usage: `basename $0` [<options>][<kernel>] [<smp|hugemem|largesmp|PAE>]" >&2
     echo "  options:" >&2
@@ -216,86 +207,5 @@ function del_swl_option() {
                 mv -f ${mod_conf}.tmp ${mod_conf}
             fi
         fi
-    fi
-}
-
-# Add an initrd module for SuSE systems
-# Note: INITRD_MODULES comes from the $kernel_cfg file
-add_initrd_mod_suse() {
-    local driver=$1
-    local kernel_cfg=$2
-    local use_swl=$3
-    local swl
-    local updated=0
-    local add_first=0
-    local module
-
-    if [ -f $kernel_cfg ] ; then
-        source $kernel_cfg
-    else
-        echo "invalid kernel config file: $kernel_cfg"
-        exit 1
-    fi
-
-    if [ -z "$INITRD_MODULES" ] ; then
-        INITRD_MODULES=${driver}
-        updated=1
-    else
-        # if USE_SWL is set AND one of the USE_SWL modules is already being
-        # used, then, and only then, we need the RAIDCore driver to load first,
-        # but the RAIDCore configuration device should still always be last
-        if echo $INITRD_MODULES | grep -v ${driver} > /dev/null ; then
-            for swl in ${use_swl}; do
-                module=SWL_MODULE_${swl}
-                if ! echo $INITRD_MODULES | grep -v ${!module} > /dev/null; then
-                    add_first=1
-                fi
-            done
-            if [ ${add_first} = 1 ]; then
-                INITRD_MODULES="${driver} $INITRD_MODULES"
-            else
-                INITRD_MODULES="$INITRD_MODULES ${driver}"
-            fi
-            updated=1
-        fi
-    fi
-
-    if [ $updated = 1 ] ; then
-        if [ -f $kernel_cfg ] ; then
-            if grep INITRD_MODULES $kernel_cfg > /dev/null ; then
-                cat $kernel_cfg | sed -e s/^INITRD_MODULES=.*$/INITRD_MODULES=\""$INITRD_MODULES"\"/ > $kernel_cfg.tmp
-                mv $kernel_cfg.tmp $kernel_cfg
-            else
-                echo INITRD_MODULES=\"$INITRD_MODULES\" >> $kernel_cfg
-            fi
-        else
-            echo INITRD_MODULES=\"$INITRD_MODULES\" >> $kernel_cfg
-        fi
-    fi
-}
-
-# Remove an initrd module for SuSE systems
-# Note: INITRD_MODULES comes from the $kernel_cfg file
-del_initrd_mod_suse() {
-    local driver=$1
-    local kernel_cfg=$2
-    local updated=0
-
-    if [ -f $kernel_cfg ] ; then
-        source $kernel_cfg
-        if [ -n "$INITRD_MODULES" ] ; then
-            if echo $INITRD_MODULES | grep ${driver} > /dev/null; then
-                INITRD_MODULES=${INITRD_MODULES//${driver}/}
-                updated=1
-            fi
-        fi
-    else
-        echo "invalid kernel config file: $kernel_cfg"
-        exit 1
-    fi
-
-    if [ $updated = 1 ] ; then
-        cat $kernel_cfg | sed -e s/^INITRD_MODULES=.*$/INITRD_MODULES=\""$INITRD_MODULES"\"/ > $kernel_cfg.tmp
-        mv $kernel_cfg.tmp $kernel_cfg
     fi
 }

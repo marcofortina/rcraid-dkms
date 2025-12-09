@@ -759,14 +759,6 @@ rc_receive_msg(void)
 		// erroneous Soft CPU lockup's.
 		// Note touch_nmi_watchdog() implies touch_softlockup_watchdog() on all
 		// architectures that support it, and does nothing on those that don't.
-		// SUSE 10.1 exports it in header file, but fails to link it in...
-		// Works on 10.2....  Hmmm - Well Spinlocks never observed on any
-		// SUSE and this is a simple way to exclude it - so lets
-		// just exclude it from all SUSE kernels.
-#ifndef CONFIG_SUSE_KERNEL
-		touch_nmi_watchdog();
-#endif
-
 		if (delay <= 1000) {
 			preempt_disable();
 			udelay(delay);

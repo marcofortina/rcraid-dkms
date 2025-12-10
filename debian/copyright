@@ -1,18 +1,19 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: kpatch
-Source: http://github.com/dynup/kpatch
+Upstream-Name: rcraid
+Source: https://github.com/AMD
 
 Files: *
-Copyright: 2014-2015 Seth Jennings <sjenning@redhat.com>
-           2013-2015 Josh Poimboeuf <jpoimboe@redhat.com>
-License: GPL-2+
-
-Files: kpatch-build/insn/*
-Copyright: 2002, 2004, 2009 IBM Corporation
+Copyright:
+ 2014-2025 AMD
+ 2018-2025 Lenovo
+ 2018 Thomas Karl Pietrowski <thopiekar@gmail.com>
+ 2025 Marco Fortina <marco_fortina@hotmail.it>
 License: GPL-2+
 
 Files: debian/*
-Copyright: 2016 Chris J Arges <chris.j.arges@canonical.com>
+Copyright:
+ 2018 Thomas Karl Pietrowski <thopiekar@gmail.com>
+ 2025 Marco Fortina <marco_fortina@hotmail.it>
 License: GPL-2+
 
 License: GPL-2+
@@ -31,4 +32,3 @@ License: GPL-2+
  .
  On Debian systems, the complete text of the GNU General
  Public License version 2 can be found in "/usr/share/common-licenses/GPL-2".
-

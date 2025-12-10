@@ -1,3 +1,11 @@
+rcraid (9.3.2) UNRELEASED; urgency=low
+
+  * Update to upstream AMD version 9.3.2
+  * Ensure compatibility with Ubuntu 20.04 LTS (focal), 22.04 LTS (jammy),
+    and 24.04 LTS (noble)
+
+ -- Marco Fortina <marco_fortina@hotmail.it>  Wed, 10 Dec 2025 17:04:16 +0100
+
 rcraid (8.1.0) bionic; urgency=low
 
    * Initial release
@@ -5,4 +13,3 @@ rcraid (8.1.0) bionic; urgency=low
    * Automatic builds via dkms
 
  -- Thomas Karl Pietrowski <thopiekar@gmail.com>  Fri, 02 Nov 2018 01:03:36 +0100
-

@@ -15,3 +15,17 @@ src/.modules.order.cmd
 # Generated files
 src/rcraid.mod.c
 src/vers.c
+
+# Generated build and Debian helper files
+debian/.debhelper/
+debian/debhelper-build-stamp
+debian/files
+debian/rcraid-dkms.debhelper.log
+debian/rcraid-dkms.dkms.debhelper
+debian/rcraid-dkms.postinst.debhelper
+debian/rcraid-dkms.prerm.debhelper
+debian/rcraid-dkms.substvars
+debian/rcraid-dkms/
+debian/rcraid.debhelper.log
+debian/rcraid.substvars
+debian/rcraid/

@@ -1,27 +1,28 @@
 Source: rcraid
 Section: kernel
 Priority: optional
-Maintainer: Thomas Karl Pietrowski <thopiekar@gmail.com>
-Build-Depends: debhelper (>= 9), dkms
-Standards-Version: 3.9.8
+Maintainer: Marco Fortina <marco_fortina@hotmail.it>
+Build-Depends:
+ debhelper (>= 12),
+ dkms,
+ dh-sequence-dkms
+Standards-Version: 4.6.2
 
 Package: rcraid
 Architecture: linux-amd64
 Depends:
- ${shlibs:Depends},
  ${misc:Depends},
  rcraid-dkms,
  linux-headers-amd64 | linux-headers-generic
 Description: AMD RAIDXpert driver - metapackage
- .
+ This metapackage installs the AMD RAIDXpert DKMS driver and the
+ required Linux kernel headers needed for the AMD RAID controller.
 
 Package: rcraid-dkms
 Architecture: linux-amd64
 Depends:
- ${shlibs:Depends},
  ${misc:Depends},
  dkms
 Description: DKMS module for AMD RAIDXpert (rcraid)
- .
-
-
+ This package contains the DKMS kernel module for the AMD RAIDXpert
+ storage driver and automatically rebuilds the module for each kernel.

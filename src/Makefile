@@ -68,7 +68,7 @@ module:
 	$(MAKE) -C $(KDIR) M=$(PWD)
 
 clean:
-	$(RM) -f *.o *.ko vers.c .*.cmd .*.d
+	$(RM) -f *.o *.ko vers.c .*.cmd .*.d .module-common.o
 	$(RM) -f rcraid.mod.c Module.symvers Modules.symvers
 	$(RM) -rf .tmp_versions Module.markers modules.order
 

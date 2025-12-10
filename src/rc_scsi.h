@@ -2,6 +2,7 @@
  *
  * Copyright © 2006-2008 Ciprico Inc. All rights reserved.
  * Copyright © 2008-2013 Dot Hill Systems Corp. All rights reserved.
+ * Copyright © 2021-2024, Advanced Micro Devices, Inc. All rights reserved.
  *
  * Use of this software is subject to the terms and conditions of the written
  * software license agreement between you and DHS (the "License"),
@@ -18,11 +19,12 @@
  *
  ****************************************************************************/
 
+#include <scsi/scsi_cmnd.h>
 /*
  * The maximum number of SCSI targets
- * 16 arrays (8 primary + 8 imported) + 8 pass-through devices + 1 config dev.
+ * 48 arrays (24 primary + 24 imported) + 24 pass-through devices + 1 config dev.
  */
-#define RC_MAX_SCSI_TARGETS 25
+#define RC_MAX_SCSI_TARGETS 57
 
 /*
  * SCSI Commands (that we treat special and need a "generic" platform independent
@@ -35,6 +37,8 @@
 #define RC_WRITE_6     0x0A
 #define RC_WRITE_10    0x2A
 #define RC_WRITE_16    0x8a
+#define RC_MAINTENANCE_IN 0xA3
+#define RC_WRITE_SAME  0x93
 
 #define BYTE0( x ) ( unsigned char )( x )
 #define BYTE1( x ) ( unsigned char )( x >> 8  )
@@ -232,3 +236,10 @@ typedef struct sense_data_s {
 #define ASENCODE_INVALID_MESSAGE_ERROR          0x00
 #define ASENCODE_LUN_FAILED_SELF_CONFIG         0x00
 #define ASENCODE_OVERLAPPED_COMMAND             0x00
+
+#if LINUX_VERSION_CODE > KERNEL_VERSION(5,17,0)
+static inline struct scsi_pointer *rcraid_scsi_pointer(struct scsi_cmnd *cmd)
+{
+	return scsi_cmd_priv(cmd);
+}
+#endif

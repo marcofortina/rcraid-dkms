@@ -2,6 +2,7 @@
  *
  * Copyright © 2006-2008 Ciprico Inc. All rights reserved.
  * Copyright © 2008-2015 Dot Hill Systems Corp. All rights reserved.
+ * Copyright © 2021-2024, Advanced Micro Devices, Inc. All rights reserved.
  *
  * Use of this software is subject to the terms and conditions of the written
  * software license agreement between you and DHS (the "License"),

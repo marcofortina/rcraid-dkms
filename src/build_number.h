@@ -2,12 +2,14 @@
 *
 *   MODULE: rc_build_number.h
 *
-*		Header file to define the build number variables.
+*   Header file to define the build number variables.
 *
 *   Copyright (c) 2000-2004, RAIDCore, Inc.
 *   Copyright (c) 2005-2006, Broadcom Corporation.  All rights reserved.
 *   Copyright (c) 2006-2008, Ciprico Inc.  All rights reserved.
 *   Copyright (c) 2008-2013, Dot Hill Systems Corp.  All rights reserved.
+*   Copyright (c) 2015-2017, Seagate All rights reserved.
+*   Copyright (c) 2017-2024, Advanced Micro Devices.  All rights reserved.
 *
 \****************************************************************************/
 
@@ -30,7 +32,6 @@
 #define _RC_BUILD_NUMBER_H_EXTERN extern
 #undef extern
 #endif
-
 
 #ifdef __cplusplus
 #include "rc_types.h"

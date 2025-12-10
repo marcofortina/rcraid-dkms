@@ -9,6 +9,8 @@ src/.rcraid.mod.cmd
 src/Module.symvers
 src/modules.order
 src/rcraid.ko
+src/.Module.symvers.cmd
+src/.modules.order.cmd
 
 # Generated files
 src/rcraid.mod.c

@@ -1,6 +1,7 @@
 /****************************************************************************
  *
  * Copyright 2010-2013 Dot Hill Systems Corp. All rights reserved.
+ * Copyright © 2020-2024 Advanced Micro Devices, Inc. All rights reserved.
  *
  ****************************************************************************/
 
@@ -13,6 +14,8 @@
 #ifndef RHEL_RCBUILD
 #include <linux/genhd.h>
 #endif
+#else
+//#include <blkdev.h>
 #endif
 #include <linux/sched.h>
 #include <linux/completion.h>
@@ -22,6 +25,7 @@
 #include <linux/pagemap.h>
 #include <linux/interrupt.h>
 #include <linux/compat.h>
+#include <linux/pci.h>          // struct msix_entry
 
 #include <scsi/scsi.h>
 #include <scsi/sg.h>
@@ -92,7 +96,7 @@ rccfg_io(struct sg_io_hdr *hdr)
 	}
 	memset(srb, 0, size);
 
-    target = 24; // hack alert
+	target = RC_MAX_SCSI_TARGETS-1; // hack alert
 	srb->function     = RC_SRB_EXECUTE_SCSI;
 	srb->status       = RC_SRB_STATUS_SUCCESS;
 	srb->bus          = 0;

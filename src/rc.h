@@ -3,6 +3,7 @@
  * Copyright © 2006-2008 Ciprico Inc. All rights reserved.
  * Copyright © 2008-2014 Dot Hill Systems Corp. All rights reserved.
  * Copyright © 2015-2016 Seagate Technology LLC. All rights reserved.
+ * Copyright © 2020-2024 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Use of this software is subject to the terms and conditions of the written
  * software license agreement between you and DHS (the "License"),
@@ -34,7 +35,10 @@
 #include <linux/slab.h>
 #include <linux/completion.h>
 
+#ifdef RHEL_RCBUILD
 #include <linux/blkdev.h>
+#endif
+
 #include <scsi/scsi.h>
 #include <scsi/scsi_host.h>
 #include <scsi/scsi_device.h>
@@ -153,7 +157,7 @@ typedef struct rc_event_thread_s {
         int                 num_srb;
         rc_srb_queue_t      cfg_change_detect;
         rc_srb_queue_t      cfg_change_response;
-        rc_uint32_t         targets[MAX_ARRAY];
+        rc_uint32_t         targets[RC_MAX_SCSI_TARGETS];
 } rc_event_thread_t;
 
 extern rc_event_thread_t rc_event_thread;
@@ -188,6 +192,36 @@ typedef struct rc_thread_s {
 extern rc_thread_t rc_thread[];
 
 #define DEVICE_ACPI_HANDLE(dev) ((acpi_handle)ACPI_HANDLE(dev))
+
+//
+// UEFI NVRAM Access
+//
+
+#include <linux/efi.h>
+
+#define NVME_TRAP_DEVICE_VAR_GUID       \
+        EFI_GUID(0x4b2865c3, 0x8722, 0x45db, 0xaa, 0x7b, 0xf9, 0xe1, 0xc1, 0xb1, 0x8d, 0x34)
+
+typedef struct {
+        uint16_t        VendorId;
+        uint16_t        DeviceId;
+        uint8_t         Bus;
+        uint8_t         Device;
+        uint8_t         Function;
+        uint8_t         _rsv0;
+} NVME_TRAP_DEVICE;
+
+struct efi *get_efi(void);
+
+extern NVME_TRAP_DEVICE NvmeTrapDeviceVar[];
+
+#define check_lock(sp) {						\
+		if (sp->osic_locked) {					\
+			rc_printk(RC_WARN, "%s: osic already locked by %s\n", __FUNCTION__, \
+				  sp->osic_lock_holder);		\
+			panic("osic_lock already held\n");		\
+		}							\
+	}
 
 // Prototypes for functions defined in rc_init.c
 void rc_shutdown_host(struct Scsi_Host *host_ptr);

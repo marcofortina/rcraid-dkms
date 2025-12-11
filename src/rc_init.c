@@ -371,7 +371,7 @@ static Scsi_Host_Template driver_template = {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5,0,0)
 	.use_clustering =          ENABLE_CLUSTERING,
 #endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 14, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,14,0)
 	.slave_configure =         rc_slave_cfg,
 #else
 	.sdev_configure  =         rc_slave_cfg,
@@ -2290,7 +2290,7 @@ rc_bios_params (struct scsi_device *sdev,
  *  A queue depth of one automatically disables tagged queueing.
  */
 static int
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 14, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,14,0)
 rc_slave_cfg(struct scsi_device *sdev)
 #else
 rc_slave_cfg(struct scsi_device *sdev, struct queue_limits *qlimits)
@@ -2344,10 +2344,12 @@ rc_slave_cfg(struct scsi_device *sdev, struct queue_limits *qlimits)
         // Set max sectors per transfer to 256 for ATAPI devices.
         //
 #if defined(blk_queue_max_hw_sectors)
-        blk_queue_max_hw_sectors(sdev->request_queue, 256);
-#else
+		blk_queue_max_hw_sectors(sdev->request_queue, 256);
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(6,14,0)
 		// Fallback
 		sdev->request_queue->limits.max_hw_sectors = 256;
+#else
+		qlimits->max_hw_sectors = 256;
 #endif
     }
 

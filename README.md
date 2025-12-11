@@ -1,91 +1,218 @@
 # rcraid-dkms
+
 AMD RAIDXpert driver as DKMS package
 
-Foreword:
-===========
+## Foreword
 
-Many AMD mainboards for the AM4 socket based on the following chipsets come with RAID support:
- * X370
- * X399
- * X470
- * X570
+Many AMD mainboards with RAID support are available across different sockets and platforms:
 
-But this RAID mode, which needs to be set in the BIOS, requires a specific driver for each OS.
-There is a driver for Windows, but for Linux AMD provides either a binary blob or the sources.
-When following the instructions, you will need to recompile the driver and install the kernel module on each kernel update and/or upgrade.
-Since we are in the 21 century and we have software like DKMS, we don't need to do this manually, but let it happen automatically.
+### AM4 Socket
 
-Goal
-====
-Therefore we try here to keep the code alive for many kernel versions as possible and deliver it within a PPA for Ubuntu as a DKMS package.
+- X370 / B350
+- X470 / B450
+- X570 / B550
 
-Installation
-============
-## Debian/Ubuntu
-  * Driver package for Ubuntu: https://launchpad.net/~thopiekar/+archive/ubuntu/rcraid 
-    ```bash
-    sudo add-apt-repository ppa:thopiekar/rcraid
-    sudo apt-get update
-    sudo apt-get install rcraid-dkms
-    ```
-  * Switching to RAID mode:
-    * Boot Linux in AHCI mode.
-    * Append `modprobe.blacklist=ahci` to GRUB_CMDLINE_LINUX_DEFAULT in /etc/default/grub
-    * Run `sudo update-grub`
-    * Restart
-    * Switch to RAID mode
-    * Boot your Linux installation from a RAID disk
-    
-## Arch/Manjaro
-* Download and unpack zip or:
+### AM5 Socket
 
-```bash
-  git clone https://github.com/thopiekar/rcraid-dkms.git
-```
+- X670 / B650
+- X870 / B850
 
-* From inside "arch" directory:
+### TR4 Socket (Threadripper)
+
+- X399
+
+### sTRX4 Socket (Threadripper)
+
+- TRX40
+
+### sWRX8 Socket (Workstation Threadripper)
+
+- WRX80
+
+> **Note:** RAID functionality requires enabling RAID mode in BIOS and using the appropriate driver for your operating system.
+
+On Linux, AMD provides the driver either as a binary blob or as full source code.
+Without automation you would need to recompile the module manually after each kernel update.
+Thanks to DKMS this process becomes automatic.
+
+---
+
+# Building From Source (Debian/Ubuntu)
+
+This section explains how to compile the driver and create a Debian package using `debuild -us -uc`.
+
+## 1. Install prerequisites
 
 ```bash
-  makepkg -si
+sudo apt-get update
+sudo apt-get install \
+    build-essential \
+    dkms \
+    devscripts \
+    debhelper \
+    dpkg-dev \
+    fakeroot \
+    git \
+    linux-headers-$(uname -r)
 ```
 
-* This will compile sources and install package for current running kernel. If you need 
-to make package for different kernel then you can use KVERS option.
-After installing edit /etc/mkinitcpio.conf and add
-  
+## 2. Clone the repository
+
 ```bash
-  MODULES=(rcraid?)
+git clone https://github.com/marcofortina/rcraid-dkms.git
+cd rcraid-dkms
 ```
 
-* Then rebuild your initrd f.e.:
+## 3. Build the DKMS Debian package
 
 ```bash
-  mkinitcpio -p linux56
+debuild -us -uc
 ```
 
-**Note:** If you just planning on switching to rcraid, my advice is: don't. 
-Support from AMD for Promontory raid on Linux is pretty much non-existent. 
-You will be way better off sticking with mdadm, zfs or lvm. 
+This will generate a `.deb` package in the parent directory, e.g.:
 
-If you REALLY want this to dual-boot Linux/Win, also don't. Setting up virtualization 
-with KVM with GPU Passtrough today is really simple, and you will not need to 
-boot Windows directly on your hardware ever again.
+```
+../rcraid-dkms_<version>_amd64.deb
+```
 
-**Sidenote:** If you decide to use rcraid regardless you might want to also install RAIDXpert. 
-Web interface isn't working properly on Manjaro, but rcadm is more or less is.
+## 4. Install the generated package
 
-**Sidenote 2:** If you ever decide to switch from rcraid to something else, you may find it useful 
-to know that deleting arrays only removes metadata. Partitions are still there, and can be
-recovered with gdisk, gpart etc. I found out that offset for partitions is 1069056 sectors (512B).
-So if you have partition starting at usual 2048 it will be at 1071104 after array deletion.
+```bash
+sudo dpkg -i ../rcraid-dkms_*_amd64.deb
+```
 
-Further info
-============
-  * https://thopiekar.eu/other/amd-raidxpress/
+DKMS will automatically compile and install the module for your running kernel.
 
-Thanks go to..
-==============
-  * To AMD to hand out the driver as source code at least. (Some history: Just think about Intel Poulsbo..)
-    * https://www.amd.com/en/support/chipsets/amd-socket-am4/x370 - section Linux
-  * To Martin Weber (@martinkarlweber) for sharing patches to make the driver work on Linux >= 4.15.x
-    * https://github.com/martinkarlweber/rcraid-patches
+---
+
+# Installing rcraid During Linux Installation
+
+This section describes how to embed the AMD RAID driver *during the OS installation process*, ensuring that the installer detects RAID volumes correctly.
+
+Documentation is based on AMD’s official quick start guides.
+
+---
+
+## Ubuntu Installation
+
+Source reference: *AMD RAID Quick Start Guide for Ubuntu Operating System – rev 0.5.1*
+
+### 1. Create RAID array in BIOS
+
+Enable RAID mode → create array → save and reboot.
+
+### 2. Boot the Ubuntu installer
+
+### 3. Load the AMD RAID driver into the installer environment
+
+1. Switch to a TTY (Ctrl+Alt+F2).
+2. Mount your driver media:
+
+```bash
+mount /dev/sdX1 /mnt
+```
+
+3. Install the driver:
+
+```bash
+dpkg -i /mnt/rcraid-dkms*.deb
+modprobe rcraid
+```
+
+4. Switch back to the installer (Ctrl+Alt+F1).
+
+### 4. Continue installation and update initramfs
+
+```bash
+echo "rcraid" | sudo tee -a /etc/initramfs-tools/modules
+sudo update-initramfs -u
+```
+
+---
+
+## RHEL Installation
+
+Source reference: *AMD RAID Quick Start Guide for RHEL Operating System – rev 1*
+
+### 1. Boot installer and enable driver disk mode
+
+At the GRUB screen press **e** and append:
+
+```
+inst.dd
+```
+
+Boot with **Ctrl+X**.
+
+### 2. Provide the driver disk
+
+Select:
+
+```
+Driver Disk → Local disk / USB
+```
+
+### 3. After installation ensure module is loaded
+
+```bash
+echo "rcraid" > /etc/modules-load.d/rcraid.conf
+dracut --force
+```
+
+---
+
+# Arch Linux Integration
+
+On Arch, the kernel installer does not auto-load DKMS modules.
+You must inject the driver into the installation ISO or load it manually.
+
+## 1. Install prerequisites
+
+```bash
+sudo pacman -S --needed base-devel dkms linux-headers git
+```
+
+## 2. Build the package
+
+```bash
+git clone https://github.com/marcofortina/rcraid-dkms.git
+cd rcraid-dkms/arch
+makepkg -si
+```
+
+## 3. Add rcraid to initramfs
+
+Edit `/etc/mkinitcpio.conf`:
+
+```
+MODULES=(rcraid)
+```
+
+Rebuild:
+
+```bash
+sudo mkinitcpio -P
+```
+
+---
+
+# Additional Notes
+
+- AMD RAID support on Linux is limited.
+- mdadm, LVM or ZFS provide far more reliable alternatives.
+
+---
+
+# Further Information
+
+- [AMD RAID Quick Start Guide for the Ubuntu Desktop Operating System](https://docs.amd.com/v/u/en-US/56966_1.01)
+- [AMD RAID Quick Start Guide for the Red Hat® (RHEL) Operating System](https://docs.amd.com/v/u/en-US/56963_1.20)
+
+---
+
+# Thanks to…
+
+- [**AMD**](https://www.amd.com/en/support/downloads/drivers.html/chipsets/swrx8/wrx80.html), for providing source code
+- [**Thomas Karl Pietrowski (@thopiekar)**](https://github.com/thopiekar/rcraid-dkms), for the original rcraid-dkms repository
+- [**Martin Weber (@martinkarlweber)**](https://github.com/martinkarlweber/rcraid-patches), for patches supporting Linux ≥ 4.15
+- [**LENOVO**](https://pcsupport.lenovo.com/us/en/products/workstations/thinkstation-p-series-workstations/thinkstation-p620/downloads/ds568883-amd-raid-driver-for-rhel-93-thinkstation-p8), for providing modified source code for RHEL 9.3

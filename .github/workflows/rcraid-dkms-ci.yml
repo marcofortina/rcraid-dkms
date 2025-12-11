@@ -1,10 +1,13 @@
 name: rcraid-dkms-ci
+
 on:
   - push
   - pull_request
+
 defaults:
   run:
     shell: bash
+
 jobs:
   rcraid-dkms-ci-job:
     env:
@@ -21,23 +24,67 @@ jobs:
       - name: ${{ github.event.repository.name }}_${{ matrix.os }}_checkout
         uses: actions/checkout@v2
 
+      - name: ${{ github.event.repository.name }}_${{ matrix.os }}_set_version
+        run: echo "VERSION=$(dpkg-parsechangelog --show-field Version | sed 's/[-+].*//')" >> $GITHUB_ENV
+
       - name: ${{ github.event.repository.name }}_${{ matrix.os }}_environment_details
         run: |
           uname -r
           uname -a
           cat /etc/os-release
           ls -1 /lib/modules/
+          env
 
       - name: ${{ github.event.repository.name }}_${{ matrix.os }}_install_build_depdencies
         run: |
-          sudo apt update
-          sudo apt install -y --no-install-recommends make linux-headers-generic
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            make \
+            dkms \
+            devscripts \
+            debhelper \
+            build-essential \
+            fakeroot \
+            lintian \
+            dh-sequence-dkms \
+            linux-headers-generic
 
       - name: ${{ github.event.repository.name }}_${{ matrix.os }}_make
         run: |
-          cd src
-          echo
-          ls -1 /lib/modules/
-          echo
+          cd $GITHUB_WORKSPACE/src/
           export KVERS=$(uname -r)
           make
+
+      - name: ${{ github.event.repository.name }}_${{ matrix.os }}_make_clean
+        run: |
+          cd $GITHUB_WORKSPACE/src/
+          make clean
+
+      - name: ${{ github.event.repository.name }}_${{ matrix.os }}_build_package
+        run: |
+          cd $GITHUB_WORKSPACE
+          echo "Building rcraid-dkms package version $VERSION"
+          debuild -us -uc
+
+      - name: ${{ github.event.repository.name }}_${{ matrix.os }}_lint_package
+        run: |
+          cd $GITHUB_WORKSPACE
+          lintian -I -I ../rcraid_${VERSION}_amd64.changes
+
+      - name: ${{ github.event.repository.name }}_${{ matrix.os }}_prepare_artifacts
+        run: |
+          cd $GITHUB_WORKSPACE
+          cp ../rcraid-dkms_${VERSION}_amd64.deb .
+          cp ../rcraid_${VERSION}_amd64.deb .
+
+      - name: ${{ github.event.repository.name }}_${{ matrix.os }}_upload_main_package
+        uses: actions/upload-artifact@v5
+        with:
+          name: rcraid-${{ matrix.os }}-${{ env.VERSION }}
+          path: rcraid_${{ env.VERSION }}_amd64.deb
+
+      - name: ${{ github.event.repository.name }}_${{ matrix.os }}_upload_artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: rcraid-dkms-${{ matrix.os }}-${{ env.VERSION }}
+          path: rcraid-dkms_${{ env.VERSION }}_amd64.deb

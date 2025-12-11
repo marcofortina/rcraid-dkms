@@ -30,7 +30,7 @@
 #define RC_STHEXT_REDO_STRICT_TYPES
 #endif //int
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5,16,0)
-#ifndef RHEL_RCBUILD
+#if !defined(RHEL_RELEASE_CODE)
 #include <linux/stdarg.h>
 #endif
 #endif

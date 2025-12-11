@@ -203,7 +203,7 @@ void        rc_timeout_done(unsigned long data);
 #else
 void        rc_timeout_done(struct timer_list *t);
 #endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6,14,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,12,0)
 static int  rc_slave_cfg(struct scsi_device *sdev);
 #else
 static int  rc_slave_cfg(struct scsi_device *sdev, struct queue_limits *qlimits);
@@ -376,7 +376,7 @@ static Scsi_Host_Template driver_template = {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5,0,0)
 	.use_clustering =          ENABLE_CLUSTERING,
 #endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6,14,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,12,0)
 	.slave_configure =         rc_slave_cfg,
 #else
 	.sdev_configure  =         rc_slave_cfg,
@@ -716,21 +716,12 @@ rc_init_adapter(struct pci_dev *dev, const struct pci_device_id *id)
 	/*
 	 * set dma_mask to 64 bit capabilities but if that fails, try 32 bit
 	 */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,4,0)
 	if (!dma_set_mask_and_coherent(&dev->dev, DMA_BIT_MASK(64))) {
 		rc_printk(RC_NOTE, RC_DRIVER_NAME ": %s 64 bit DMA enabled\n",
 			  __FUNCTION__);
 	} else if (!dma_set_mask_and_coherent(&dev->dev, DMA_BIT_MASK(32))) {
 		rc_printk(RC_NOTE, RC_DRIVER_NAME ": %s 64 bit DMA disabled\n",
 			  __FUNCTION__);
-#else
-	if (!pci_set_dma_mask(&dev->dev, DMA_BIT_MASK(64))) {
-		rc_printk(RC_NOTE, RC_DRIVER_NAME ": %s 64 bit DMA enabled\n",
-			  __FUNCTION__);
-	} else if (!pci_set_dma_mask(&dev->dev, DMA_BIT_MASK(32))) {
-		rc_printk(RC_NOTE, RC_DRIVER_NAME ": %s 64 bit DMA disabled\n",
-			  __FUNCTION__);
-#endif
 	} else {
 		rc_printk(RC_ERROR, RC_DRIVER_NAME ": %s failed to "
 			  "set usable DMA mask\n", __FUNCTION__);
@@ -1250,17 +1241,10 @@ rc_shutdown_adapter(rc_adapter_t *adapter)
 	rc_printk(RC_DEBUG, "%s: free private_mem 0x%px\n",
 		  __FUNCTION__, adapter->private_mem.vaddr);
 	if (adapter->private_mem.vaddr)  {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,4,0)
 		dma_free_coherent(&adapter->pdev->dev,
 				    rc_state.memsize_per_controller,
 				    adapter->private_mem.vaddr,
 				    adapter->private_mem.dma_address);
-#else
-		pci_free_consistent(adapter->pdev,
-				    rc_state.memsize_per_controller,
-				    adapter->private_mem.vaddr,
-				    adapter->private_mem.dma_address);
-#endif
 	}
 
 	/* pci_disable_device(adapter->pdev); */
@@ -2327,7 +2311,7 @@ rc_bios_params (struct scsi_device *sdev,
  *  A queue depth of one automatically disables tagged queueing.
  */
 static int
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6,14,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,12,0)
 rc_slave_cfg(struct scsi_device *sdev)
 #else
 rc_slave_cfg(struct scsi_device *sdev, struct queue_limits *qlimits)

@@ -11,10 +11,14 @@
 #include <linux/miscdevice.h>
 #include <linux/version.h>
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5,14,0) && !defined(RHEL_RELEASE_CODE)
+#if defined(RHEL_RELEASE_CODE)
+#if RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(9,6)
 #include <linux/genhd.h>
-#elif defined(RHEL_RELEASE_CODE) && RHEL_RELEASE_CODE < 90600
+#endif
+#else
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,14,0)
 #include <linux/genhd.h>
+#endif
 #endif
 
 #include <linux/blkdev.h>

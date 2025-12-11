@@ -1,3 +1,5 @@
+[![CI](https://github.com/marcofortina/rcraid-dkms/actions/workflows/rcraid-dkms-ci.yml/badge.svg)](https://github.com/marcofortina/rcraid-dkms/actions/workflows/rcraid-dkms-ci.yml)
+
 # rcraid-dkms
 
 AMD RAIDXpert driver as DKMS package

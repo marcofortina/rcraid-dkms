@@ -164,6 +164,8 @@ typedef struct rc_softstate  {
 
 	atomic_t               intr_pending;
 	rc_stats_t             stats;
+
+	char                   *xsave_memory;
 } rc_softstate_t;
 
 /*

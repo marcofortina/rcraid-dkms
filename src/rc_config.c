@@ -10,13 +10,14 @@
 #include <linux/fs.h>
 #include <linux/miscdevice.h>
 #include <linux/version.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5,14,0)
-#ifndef RHEL_RCBUILD
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,14,0) && !defined(RHEL_RELEASE_CODE)
+#include <linux/genhd.h>
+#elif defined(RHEL_RELEASE_CODE) && RHEL_RELEASE_CODE < 90600
 #include <linux/genhd.h>
 #endif
-#else
-//#include <blkdev.h>
-#endif
+
+#include <linux/blkdev.h>
 #include <linux/sched.h>
 #include <linux/completion.h>
 
@@ -144,7 +145,6 @@ rccfg_io(struct sg_io_hdr *hdr)
 
 	/* always copy data in from user */
 	if(copy_from_user(data, hdr->dxferp, hdr->dxfer_len)) {
-		printk("%s: copy_from_user failed\n",__FUNCTION__);
 		err = -EFAULT;
 		goto out_data_free;
 	}
@@ -185,7 +185,6 @@ rccfg_io(struct sg_io_hdr *hdr)
 	hdr->status = srb->status;
 
 	if(copy_to_user(hdr->dxferp, data, hdr->dxfer_len)) {
-		printk("%s: copy_from_user failed\n",__FUNCTION__);
 		err = -EFAULT;
 		goto out_data_free;
 	}

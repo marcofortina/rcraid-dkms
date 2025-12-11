@@ -146,7 +146,7 @@ typedef struct rc_sg_list_s {
 	rc_uint16_t    sg_mem_type;    /* Memory ID to pass to routines */
 	rc_uint16_t    reserved;
 	rc_uint32_t    sg_num_elem;
-	rc_sg_elem_t   sg_elem[1];    /* variable size array */
+	rc_sg_elem_t   sg_elem[];      /* variable size array */
 } rc_sg_list_t;
 
 typedef struct rc_srb_s {

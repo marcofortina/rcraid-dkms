@@ -416,6 +416,8 @@ typedef struct rc_send_arg_s {
 #define RC_CTR_ACCESS_NVRAM_VAR     1025
 #define RC_CTR_IOMEM_ACCESS         1026
 #define RC_CTR_VMEM_ACCESS          1027
+#define RC_CTR_FPU_SAVE             1028
+#define RC_CTR_FPU_RESTORE          1029
 
 #define RC_CTR_PFTYPE_32_BIT    1
 #define RC_CTR_PFTYPE_64_BIT    2

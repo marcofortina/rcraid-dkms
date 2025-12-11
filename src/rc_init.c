@@ -70,6 +70,9 @@ extern const char *RC_DRIVER_BUILD_DATE;
 #define DMA_BIT_MASK(n) (((n) == 64) ? ~0ULL : ((1ULL<<(n))-1))
 #endif
 
+#define NVME_CTRL_PAGE_SHIFT   12
+#define NVME_CTRL_PAGE_SIZE    (1 << NVME_CTRL_PAGE_SHIFT)
+
 MODULE_AUTHOR(VER_COMPANYNAME_STR);
 MODULE_DESCRIPTION("AMD-RAID controller");
 MODULE_LICENSE("Proprietary");
@@ -162,6 +165,8 @@ extern unsigned int RC_EnableHIPM;
 extern unsigned int RC_EnableAN;
 extern unsigned int RC_EnableNCQ;
 extern unsigned int RC_EnableZPODD;
+extern unsigned int RC_SupportAVX;
+extern unsigned int RC_AVX_BufSize;;
 
 #define RCRAID_DEFAULT_DIPM	0x00000000;  /* Turn OFF DIPM for all ports by default for Linux */
 #define RCRAID_DEFAULT_HIPM	0x00000000;  /* Turn OFF HIPM for all ports by default for Linux */
@@ -184,10 +189,10 @@ static int  rc_eh_bus_reset(struct scsi_cmnd * scmd);
 static int  rc_eh_hba_reset(struct scsi_cmnd * scmd);
 
 void        rc_shutdown_adapter(rc_adapter_t *adapter);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,3,0)
-int         rc_ioctl(struct scsi_device * scsi_dev_ptr, unsigned int cmd, void *arg);
-#else
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 1, 0)
 int         rc_ioctl(struct scsi_device * scsi_dev_ptr, int cmd, void *arg);
+#else
+int         rc_ioctl(struct scsi_device * scsi_dev_ptr, unsigned int cmd, void *arg);
 #endif
 
 void        rc_dump_scp(struct scsi_cmnd * scp);
@@ -469,6 +474,35 @@ RC_Unmap_VidDid(
     return EFI_NOT_FOUND;
 }
 
+static void rc_avx_support(void)
+{
+	uint32_t a, b, c, d;
+
+	/* Check if AVX is supported */
+	RC_SupportAVX = boot_cpu_has(X86_FEATURE_AVX) && boot_cpu_has(X86_FEATURE_OSXSAVE);
+	printk("TEST: RC_SupportAVX: %d\n", RC_SupportAVX);
+
+	if (!RC_SupportAVX)
+		return;
+
+	a = 0xd;
+	c = 0;
+	__asm__ __volatile__
+		("cpuid\n\t"
+		: "+a" (a), "=b" (b), "=d" (d), "+c" (c)
+		);
+	RC_AVX_BufSize = b;
+
+	rc_state.xsave_memory = NULL;
+	rc_state.xsave_memory = (char *) kmalloc(RC_AVX_BufSize, GFP_KERNEL);
+	if (rc_state.xsave_memory == NULL) {
+		RC_SupportAVX = 0;
+		RC_AVX_BufSize = 0;
+		return;
+	}
+	memset(rc_state.xsave_memory, 0, RC_AVX_BufSize);
+}
+
 /*
  * rc_init_module()
  *
@@ -560,6 +594,8 @@ rc_init_module(void)
         rc_wq = kthread_run(rc_wq_handler, NULL, thread_name);
         spin_lock_init(&acpi_work_item_lock);
     }
+
+    rc_avx_support();
 }
 
 /*
@@ -947,6 +983,7 @@ rc_init_host(struct pci_dev *pdev)
 		host_ptr->cmd_per_lun = 1;  // untagged queue depth
 	}
 
+	host_ptr->nr_hw_queues = 2;
 	host_ptr->max_lun = 1;
 	host_ptr->irq = 0;
 	host_ptr->base = 0;
@@ -2799,7 +2836,7 @@ static int __init rcraid_init(void)
     memset(version_string, 0, VERSION_STRING_LEN);
     snprintf(version_string, VERSION_STRING_LEN, "V%s %s", RC_DRIVER_VERSION, RC_BUILD_NUMBER);
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6,4,0)
-    rcraid_sysctl_hdr = register_sysctl("dev/scsi/rcraid", rcraid_table);
+    rcraid_sysctl_hdr = register_sysctl_sz("rcraid", rcraid_table, ARRAY_SIZE(rcraid_table) - 1);
 #else
 	rcraid_sysctl_hdr = register_sysctl_table(rcraid_root_table);
 #endif
@@ -2851,6 +2888,9 @@ static void __exit rcraid_exit(void)
     unregister_sysctl_table(rcraid_sysctl_hdr);
 
     rc_remove_proc();
+
+    if (rc_state.xsave_memory)
+        kfree(rc_state.xsave_memory);
 }
 
 module_init(rcraid_init);

@@ -23,7 +23,7 @@
 #define RC_BUILD_VER_MINOR 3
 
 #define RC_MAX_VER_PATCH_SIZE 8
-#define RC_BUILD_VER_PATCH 2
+#define RC_BUILD_VER_PATCH 3
 
 #define RC_STRINGIFY(s) #s
 

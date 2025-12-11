@@ -31,8 +31,8 @@
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,0,0)
 #include <linux/timekeeping.h>
 #endif
-#include <scsi/sg.h>
 #include "rc_ahci.h"
+#include <scsi/sg.h>
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,18,0)
 #include <linux/dma-mapping.h>
@@ -92,16 +92,14 @@ static struct rc_interface_s *rc_interface_header = &RC_OurInterfaceStruct;
 
 int rc_srb_seq_num = 0;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,6,0)
-static void rc_sysrq_intr (unsigned char key);
-#else
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,6,0)
 static void rc_sysrq_intr (int key);
-#endif
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,6,0)
-static void rc_sysrq_state (unsigned char key);
-#else
 static void rc_sysrq_state (int key);
+#else
+static void rc_sysrq_intr (u8 key);
+
+static void rc_sysrq_state (u8 key);
 #endif
 
 struct sysrq_key_op rc_skey_ops_intr = {
@@ -222,12 +220,12 @@ rc_vprintf(uint32_t severity, const char *format, va_list ar)
 	// Only print timestamp if new line -- i.e.
 	// last user message had a newline character.
 	if (severity && rc_saw_newline) {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,0,0)
-		ktime_get_real_ts64(&tv);
-		//printk("rcraid: (%lli.%06li) ", tv.tv_sec, tv.tv_nsec);
-#else
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,0,0)
 		do_gettimeofday(&tv);
 		printk("rcraid: (%li.%06li) ", tv.tv_sec, tv.tv_usec);
+#else
+		ktime_get_real_ts64(&tv);
+		//printk("rcraid: (%lli.%06li) ", tv.tv_sec, tv.tv_nsec);
 #endif
 
 		rc_saw_newline = 0; // No newline in timestamp
@@ -731,12 +729,16 @@ rc_receive_msg(void)
 	struct rc_receive_arg_s *args;
 	rc_softstate_t *state;
 	int delay;
+	char *xsave_mem;
 
 
 	args = rc_interface_header->receive_arg;
 	state = &rc_state;
+	xsave_mem = rc_state.xsave_memory;
 
-	preempt_enable();
+	if ((args->call_type != RC_CTR_FPU_SAVE) && (args->call_type != RC_CTR_FPU_RESTORE))
+		preempt_enable();
+
 	switch (args->call_type) {
 	case RC_CTR_TEST:
 		rc_printk(RC_DEBUG, "rc_receive_msg Send/Receive test passed\n");
@@ -996,12 +998,30 @@ rc_receive_msg(void)
         }
         break;
 
+    case RC_CTR_FPU_SAVE:
+        {
+            preempt_disable();
+            asm volatile("mov $0x07, %rax\n\t ; xor %rdx, %rdx\n\t");
+            asm volatile("xsave %[fp]" : [fp] "=m" (*xsave_mem));
+        }
+        break;
+
+    case RC_CTR_FPU_RESTORE:
+        {
+            asm volatile("mov $0x07, %rax\n\t ; xor %rdx, %rdx\n\t");
+            asm volatile("xrstor %[fp]" : [fp] "=m" (*xsave_mem));
+            preempt_enable();
+        }
+        break;
+
 	default:
 		rc_printk(RC_WARN,"rc_receive_msg: unknown msg type 0x%x\n",
 			  args->call_type);
 		break;
 	}
-	preempt_disable();
+
+	if ((args->call_type != RC_CTR_FPU_SAVE) && (args->call_type != RC_CTR_FPU_RESTORE))
+		preempt_disable();
 }
 
 
@@ -1872,6 +1892,8 @@ rc_msg_srb_q_tasklet(  unsigned long arg)
 
 			rc_msg_process_srb(srb);
 			spin_lock_irqsave(&state->srb_q.lock, irql);
+			if (stat_last_pending != atomic_read(&state->intr_pending)) {
+			}
 		}
 		// STATS
 		/*
@@ -2465,7 +2487,6 @@ rc_msg_map_mem(struct map_memory_s *map)
 #else
 			map->physical_address = dma_map_page(&adapter->pdev->dev, page, offset, len_mapped, PCI_DMA_BIDIRECTIONAL);
 #endif
-
             if (dma_mapping_error(&adapter->pdev->dev, map->physical_address))
             {
                 map->number_bytes = 0;
@@ -2568,7 +2589,6 @@ rc_msg_timeout_done(unsigned long data)
 	init_timer(&state->msg_timeout);
 	up(&state->msg_timeout_sema);
 }
-
 #else
 rc_msg_timeout_done(struct timer_list *t)
 {
@@ -2743,10 +2763,10 @@ rc_msg_stats(char *buf, int buf_size)
 	return(cnt);
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,6,0)
-static void rc_sysrq_intr (unsigned char key)
-#else
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,6,0)
 static void rc_sysrq_intr (int key)
+#else
+static void rc_sysrq_intr (u8 key)
 #endif
 {
 	rc_softstate_t *state;
@@ -2764,10 +2784,10 @@ static void rc_sysrq_intr (int key)
 	rc_printk(RC_ALERT, "scheduling tasklet interrupt\n");
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,6,0)
-static void rc_sysrq_state (unsigned char key)
-#else
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,6,0)
 static void rc_sysrq_state (int key)
+#else
+static void rc_sysrq_state (u8 key)
 #endif
 {
 

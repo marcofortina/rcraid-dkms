@@ -20,7 +20,6 @@
  *
  ****************************************************************************/
 
-#include "linux/signal.h"
 #include "linux/vmalloc.h"
 #include "linux/wait.h"
 #include "linux/sched.h"
@@ -40,6 +39,8 @@
 #ifdef CONFIG_HIGHMEM
 #include "asm/highmem.h"
 #endif
+
+#include "linux/signal.h"
 
 #include "rc.h"
 
@@ -625,6 +626,7 @@ out:
 	return ret;
 }
 
+#if 0
 #ifndef virt_addr_valid
 #define virt_addr_valid(kaddr)   pfn_valid(__pa(kaddr) >> PAGE_SHIFT)
 #endif
@@ -730,6 +732,7 @@ rc_check_addr_list(rc_addr_list_t *addr_list)
 	status = 1;
 	return status;
 }
+#endif
 
 
 static __inline__ int
@@ -755,11 +758,13 @@ rc_addr_list_elements( rc_addr_list_t  *ap)
 void
 rc_msg_mem_op(rc_mem_op_t *mop)
 {
-	int cpu, i;
+	int cpu;
+//	int i;
 	unsigned long irql;
 	rc_thread_t *tp;
 	rc_uint32_t status = 1;
 
+#if 0 /* Disable this debug code temporarily */
 	if (rc_msg_level >= RC_DEBUG) {
 
 		switch (mop->opcode) {
@@ -817,6 +822,7 @@ rc_msg_mem_op(rc_mem_op_t *mop)
 
 		}
 	}
+#endif
 
 	mop->status = status;
 

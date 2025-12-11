@@ -13,8 +13,8 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - ubuntu-18.04
-          - ubuntu-20.04
+          - ubuntu-22.04
+          - ubuntu-24.04
     runs-on: ${{ matrix.os }}
     name: ${{ github.event.repository.name }}_${{ matrix.os }}
     steps:
@@ -30,6 +30,7 @@ jobs:
 
       - name: ${{ github.event.repository.name }}_${{ matrix.os }}_install_build_depdencies
         run: |
+          sudo apt update
           sudo apt install -y --no-install-recommends make linux-headers-generic
 
       - name: ${{ github.event.repository.name }}_${{ matrix.os }}_make
@@ -38,5 +39,5 @@ jobs:
           echo
           ls -1 /lib/modules/
           echo
-          export KVERS="$(ls -1 /lib/modules/ | tail -n1)"
+          export KVERS=$(uname -r)
           make

@@ -31,7 +31,11 @@
 #endif //int
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5,16,0)
 #if !defined(RHEL_RELEASE_CODE)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,6,0)
 #include <linux/stdarg.h>
+#else
+#include <stdarg.h>
+#endif
 #endif
 #endif
 

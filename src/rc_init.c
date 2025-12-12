@@ -203,7 +203,7 @@ void        rc_timeout_done(unsigned long data);
 #else
 void        rc_timeout_done(struct timer_list *t);
 #endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6,12,0)
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(6,12,0)
 static int  rc_slave_cfg(struct scsi_device *sdev);
 #else
 static int  rc_slave_cfg(struct scsi_device *sdev, struct queue_limits *qlimits);
@@ -376,7 +376,7 @@ static Scsi_Host_Template driver_template = {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5,0,0)
 	.use_clustering =          ENABLE_CLUSTERING,
 #endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6,12,0)
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(6,12,0)
 	.slave_configure =         rc_slave_cfg,
 #else
 	.sdev_configure  =         rc_slave_cfg,
@@ -2311,7 +2311,7 @@ rc_bios_params (struct scsi_device *sdev,
  *  A queue depth of one automatically disables tagged queueing.
  */
 static int
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6,12,0)
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(6,12,0)
 rc_slave_cfg(struct scsi_device *sdev)
 #else
 rc_slave_cfg(struct scsi_device *sdev, struct queue_limits *qlimits)
